@@ -1,7 +1,5 @@
 # EucDomain
 
-Contribution:
-
 (1) EuclideanDomain gives the definition of Euclidean Domain (ED).
 
 (2) GauInt.EucDomain shows Gaussian Integers form an ED.
