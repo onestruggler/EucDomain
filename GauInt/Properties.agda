@@ -9,34 +9,37 @@ module GauInt.Properties where
 -- imports from local.
 open import GauInt.Instances
 open import Instances
-open import GauInt.Base using (𝔾 ; _+_i ; _ᶜ ; Re ; Im ; _+0i ; _+0i')
+open import GauInt.Base using (𝔾 ; _+_i ; _ᶜ ; Re ; Im ; _+0i ; _+0i' ; 0𝔾)
 open import Integer.Properties
 
 -- imports from stdlib and Agda.
 open import Level using (0ℓ)
 open import Relation.Nullary using (yes; no; ¬_)
-open import Relation.Binary using (DecidableEquality ; Setoid ; DecSetoid)
+open import Relation.Binary using (DecidableEquality ; Setoid ; DecSetoid ; tri< ; tri≈ ; tri>)
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 
-open import Data.Product using (proj₁; proj₂; _,_)
+open import Data.Product using (proj₁; proj₂; _,_ ; _×_)
+open import Data.Sum using (_⊎_ ; inj₁ ; inj₂) renaming ([_,_]′ to ⊎-elim)
 open import Data.Nat as Nat using (ℕ; suc; zero)
 import Data.Nat.Properties as NatP
 open import Data.Integer.Properties as IntP
   using (+-assoc ; +-identityˡ ; +-identityʳ ; *-identityˡ ; +-inverseˡ ; +-inverseʳ ; +-comm ; 0≤i⇒+∣i∣≡i ; +-mono-≤ ; +-mono-<-≤ ; +-mono-≤-<)
 open import Data.Integer as Int
-  using (ℤ ; +_ ; NonNegative ; -[1+_] ; +[1+_] ; +≤+ ; +<+ ; ∣_∣ ; 0ℤ)
+  using (ℤ ; +_ ; NonNegative ; -[1+_] ; +[1+_] ; +≤+ ; +<+ ; ∣_∣ ; 0ℤ ; +0)
 import Data.Integer.Solver as IS
 open IS.+-*-Solver
-
 
 open import Algebra.Bundles as B
 import Algebra.Morphism as Morphism
 open import Algebra.Structures {A = 𝔾} _≡_
 open import Function.Base using (_$_)
-
 module 𝔾toℕ = Morphism.Definitions 𝔾 ℕ _≡_
 module ℕto𝔾 = Morphism.Definitions ℕ 𝔾 _≡_
+
+
+open import Algebra.Definitions (_≡_ {A = 𝔾}) using (AlmostLeftCancellative)
+
 
 -- ----------------------------------------------------------------------
 -- Equality
@@ -463,6 +466,241 @@ rank+0i=y*yᶜ {y} = sym $ begin
 1+0i=1 = refl 
 
 
+
+-- ----------------------------------------------------------------------
+-- Domain Structrue on 𝔾 
+
+-- Some auxillaries.
+
+-- Zero is unique. 
+unique0 : ∀ {a b} -> (a + b i) ≡ 0# -> a ≡ 0ℤ × b ≡ 0ℤ
+unique0 {.+0} {.+0} refl = refl , refl
+
+-- Conversely, if a + bi ≠ 0 then at least one of a and b is not zero.
+unique0' : ∀ {a b} -> ¬ (a + b i) ≡ 0# -> ¬ a ≡ 0ℤ ⊎ ¬ b ≡ 0ℤ
+unique0' {a@(+_ zero)} {b@(+_ zero)} neq with neq refl
+... | ()
+unique0' {+_ zero} {+[1+ n ]} neq = inj₂ (λ ())
+unique0' {+_ zero} { -[1+_] n} neq = inj₂ (λ ())
+unique0' {+[1+ n ]} {b} neq = inj₁ (λ ())
+unique0' { -[1+_] n} {b} neq = inj₁ (λ ())
+
+
+-- Make an equation onesided.
+oneside : ∀ {a b : 𝔾} -> a ≡ b -> a - b ≡ 0#
+oneside {a} {b} eq rewrite eq = rightInv-+ b 
+
+-- Make an equation twosided.  
+twoside : ∀ {a b : 𝔾} -> a - b ≡ 0# -> a ≡ b
+twoside {a} {b} eq = sym $ -‿injective $ +-inverseʳ-unique a (- b) eq
+  where
+    open import Algebra.Properties.Ring +-*-ring
+
+-- Make an equation twosided, ℤ version.
+twosideℤ : ∀ {a b : ℤ} -> a - b ≡ 0# -> a ≡ b
+twosideℤ {a} {b} eq = sym (PRI.-‿injective (PRI.+-inverseʳ-unique a (- b) eq ))
+  where
+    import Algebra.Properties.Ring IntP.+-*-ring as PRI
+
+
+-- We show zero divisor is necessary zero (equivalent to left or right
+-- cancellation in a commutative ring), which makes 𝔾 an integral
+-- domain.
+zero-divisor-is-zero :  ∀ {x y : 𝔾} -> x * y ≡ 0# -> ¬ x ≡ 0# -> y ≡ 0#
+zero-divisor-is-zero {x@(a + b i)} {y@(c + d i)} eq neq = cong₂ _+_i (proj₁ step6) (proj₂ step6)
+  where
+    open ≡-Reasoning
+    open IS.+-*-Solver
+    -- 0 = x * y = (a * c - b * d) + (a * d + b * c) i, together with
+    -- c + d i ≠ 0, we can derive a = 0 and b = 0, contradicting x ≠
+    -- 0. The proof idea is:
+    --
+    -- step0 : a * c - b * d = 0 and a * d + b * c = 0
+    -- step1 : a * c * c - b * d * c = 0
+    -- step2 : a * d * d + b * c * d = 0
+    -- s1,s2 ⇒ step1&2 : a * (c * c + d * d) = 0
+    -- step3 : a * c * d - b * d * d = 0
+    -- step4 : a * d * c + b * c * c = 0
+    -- s3,s4 ⇒ step3&4 : b * (c * c + d * d) = 0
+    -- one of a b nonzero ⇒ step5 : (c * c + d * d) = 0
+    -- step5 ⇒ step6 : c = 0 and d = 0
+
+    -- step0 : a * c - b * d = 0 and a * d + b * c = 0
+    step0 : a * c - b * d ≡ 0# × a * d + b * c ≡ 0#
+    step0 = unique0 eq
+    
+    -- step1 : a * c * c - b * d * c = 0
+    step1 : a * c * c - b * d * c ≡ 0#
+    step1 = begin
+        a * c * c - b * d * c ≡⟨ solve 4 (\ a b c d -> a :* c :* c :- b :* d :* c := (a :* c :- b :* d) :* c) refl a b c d ⟩
+        (a * c - b * d) * c ≡⟨ cong (_* c) (proj₁ step0) ⟩
+        0ℤ * c ≡⟨ refl ⟩
+        0ℤ ∎
+
+    -- step2 : a * d * d + b * c * d = 0
+    step2 : a * d * d + b * c * d ≡ 0#
+    step2 = begin
+        a * d * d + b * c * d ≡⟨ solve 4 (\ a b c d -> a :* d :* d :+ b :* c :* d := (a :* d :+ b :* c) :* d) refl a b c d ⟩
+        (a * d + (b * c)) * d ≡⟨ cong (_* d) (proj₂ step0) ⟩
+        0ℤ * d ≡⟨ refl ⟩
+        0ℤ ∎ 
+
+    -- c1,c2 ⇒ step1&2 : a * (c * c + d * d) = 0
+    step1&2 : a * (c * c + d * d) ≡ 0#
+    step1&2 = begin
+      a * (c * c + d * d) ≡⟨ solve 4 (\ a b c d -> a :* (c :* c :+ d :* d) := (a :* c :* c :- b :* d :* c) :+ (a :* d :* d :+ b :* c :* d) ) refl a b c d ⟩
+      (a * c * c - b * d * c) + (a * d * d + b * c * d) ≡⟨ cong₂ _+_ step1 step2 ⟩
+      0# ∎ 
+
+    -- step3 : a * c * d - b * d * d = 0
+    step3 : a * c * d - b * d * d ≡ 0#
+    step3 = begin
+        a * c * d - b * d * d ≡⟨ solve 4 (\ a b c d -> a :* c :* d :- b :* d :* d := (a :* c :- b :* d) :* d) refl a b c d ⟩
+        (a * c - b * d) * d ≡⟨ cong (_* d) (proj₁ step0) ⟩
+        0ℤ * d ≡⟨ refl ⟩
+        0ℤ ∎
+
+    -- step4 : a * d * c + b * c * c = 0
+    step4 : a * d * c + b * c * c ≡ 0#
+    step4 = begin
+        a * d * c + b * c * c ≡⟨ solve 4 (\ a b c d -> a :* d :* c :+ b :* c :* c := (a :* d :+ b :* c) :* c) refl a b c d ⟩
+        (a * d + (b * c)) * c ≡⟨ cong (_* c) (proj₂ step0) ⟩
+        0ℤ * c ≡⟨ refl ⟩
+        0ℤ ∎ 
+
+    -- s3,s4 ⇒ step3&4 : b * (c * c + d * d) = 0
+    step3&4 : b * (c * c + d * d) ≡ 0#
+    step3&4 = begin
+      b * (c * c + d * d) ≡⟨ solve 4 (\ a b c d -> b :* (c :* c :+ d :* d) := :- (a :* c :* d :- b :* d :* d) :+ (a :* d :* c :+ b :* c :* c) ) refl a b c d ⟩
+      - (a * c * d - b * d * d) + (a * d * c + b * c * c) ≡⟨ cong₂ (\x y -> (- x) + y) step3 step4 ⟩
+      0# ∎
+
+    -- one of a b nonzero ⇒ step5 : (c * c + d * d) = 0
+    -- some auxillary lemma.
+    aux : ∀ {a : ℤ} -> a * 0# ≡ 0#
+    aux {a} rewrite IntP.*-comm a 0# = refl
+
+    step1&2' : a * (c * c + d * d) ≡ a * 0#
+    step1&2' rewrite aux {a} = step1&2
+    
+    step3&4' : b * (c * c + d * d) ≡ b * 0#
+    step3&4' rewrite aux {b} = step3&4
+
+
+    step5 : c * c + d * d ≡ 0#
+    step5 = ⊎-elim (λ x₁ → IntP.*-cancelˡ-≡ a (c * c + d * d) 0# {{myins2 {a} {x₁}}} step1&2') (λ x₁ → IntP.*-cancelˡ-≡ b (c * c + d * d) 0# {{myins2 {b} {x₁}}} step3&4') (unique0' neq)
+      where
+        -- We need a translation from non-equality to NonZero predicate.
+        open import Agda.Builtin.Unit
+        myins2 : ∀ {x : ℤ} -> {n0 : ¬ x ≡ 0ℤ} -> NonZero x
+        myins2 {+_ zero} {n0} with n0 refl
+        ... | ()
+        myins2 {+[1+ n ]} {n0} = record { nonZero = tt }
+        myins2 { -[1+_] n} {n0} = record { nonZero = tt }
+
+    -- step5 ⇒ step6 : c = 0 and d = 0
+    step6 : c ≡ 0# × d ≡ 0#
+    step6 = aa+bb=0⇒a=0×b=0 step5 
+
+
+-- Almost left cancellative.
+*-alc-𝔾 : AlmostLeftCancellative 0𝔾 _*_
+*-alc-𝔾 {x@(a + b i)} y@(c + d i) z@(e + f i)  neq eq = y=z
+  where
+    onesided-eq : x * (y + (- z)) ≡ 0#
+    onesided-eq = begin
+      x * (y + (- z)) ≡⟨ *-DistributesOver-+ˡ x y (- z)  ⟩
+      x * y + x * (- z) ≡⟨ refl ⟩ 
+      x * y + (a + b i) * (- e + - f i) ≡⟨ cong (λ t → x * y + t) refl ⟩
+      x * y + ((a * - e - b * - f ) + (a * - f + b * - e) i)  ≡⟨ cong (λ t → x * y + t) (cong₂ _+_i (solve 4 (\a e b f -> a :* :- e :- b :* :- f := :- (a :* e :- b :* f)) refl a e b f) (solve 4 (\a e b f -> a :* :- f :+ b :* :- e := :- (a :* f :+ b :* e)) refl a e b f)) ⟩
+      x * y + (- (a * e - b * f) + - (a * f + b * e) i)  ≡⟨ cong (λ t → x * y + t) refl ⟩
+      x * y + (- (x * z)) ≡⟨ oneside eq  ⟩
+      0# ∎
+        where
+          open ≡-Reasoning
+          open IS.+-*-Solver
+
+    y-z=0 : (y + (- z)) ≡ 0#
+    y-z=0 = zero-divisor-is-zero onesided-eq neq
+
+    y=z : y ≡ z
+    y=z = twoside y-z=0
+
+
+-- Multiplication commutativity plus left cancellative implies 𝔾 is an
+-- commutative Domain. Knowing this, we can show e.g.
+y≠0⇒y*yᶜ≠0 : ∀ {y} -> ¬ y ≡ 0# -> ¬ y * y ᶜ ≡ 0#
+y≠0⇒y*yᶜ≠0 {y} n0 eq  = ⊥-elim (n0' e0)
+      where
+        open import Data.Empty
+        n0' : ¬ y ᶜ ≡ 0#
+        n0' x with n0 (ᶜ-injective {y} x)
+        ... | ()
+
+        eq' : y * y ᶜ ≡ y * 0#
+        eq' = begin 
+          y * y ᶜ ≡⟨ eq ⟩
+          0# ≡⟨ sym $ rightZero y ⟩
+          y * 0# ∎
+            where
+              open IS.+-*-Solver
+              open ≡-Reasoning
+
+        e0 : y ᶜ ≡ 0#
+        e0 = *-alc-𝔾 {y} (y ᶜ) 0# n0 eq'
+
+
+y≠0#⇒rank≠0 : ∀ {y : 𝔾} -> ¬ y ≡ 0# -> ¬ rank y ≡ 0#
+y≠0#⇒rank≠0 {y} n0 = rank≠0
+  where
+    open import Data.Empty
+    y*yᶜ≠0 : ¬ y * y ᶜ ≡ 0#
+    y*yᶜ≠0 = y≠0⇒y*yᶜ≠0 n0
+    rank≠0 : ¬ rank y ≡ 0#
+    rank≠0 e = ⊥-elim (y*yᶜ≠0 y*yᶜ=0) 
+      where
+        y*yᶜ=0 : y * y ᶜ ≡ 0#
+        y*yᶜ=0 = begin 
+          y * y ᶜ ≡⟨ sym $ Re+Im*i ⟩
+          Re (y * y ᶜ) + Im (y * y ᶜ) i ≡⟨ cong₂ _+_i (Re[yyᶜ]=rank {y}) refl ⟩
+          + rank y  + Im (y * y ᶜ) i ≡⟨ cong₂ _+_i (cong +_ e) (Im[yyᶜ]=0 {y}) ⟩
+          0# ∎
+            where
+              open IS.+-*-Solver
+              open ≡-Reasoning
+
+
+rank=0⇒y=0 : ∀ {y : 𝔾} -> rank y ≡ 0# -> y ≡ 0# 
+rank=0⇒y=0 {y@(a + b i)} eq0 = y=0
+  where
+    eq0' : a * a + b * b ≡ 0#
+    eq0' = IntP.∣i∣≡0⇒i≡0 eq0
+    s1 : a ≡ 0ℤ × b ≡ 0ℤ
+    s1 = aa+bb=0⇒a=0×b=0 eq0'
+    y=0 : y ≡ 0#
+    y=0 with s1
+    ... | fst , snd rewrite fst | snd = refl
+
+
+rank≥1 : ∀ {y : 𝔾} -> ¬ y ≡ 0# -> 1# ≤ rank y
+rank≥1 {y} n0 = aux (rank y) (y≠0#⇒rank≠0 {y} n0)
+  where
+    aux : ∀ (n : ℕ) -> ¬ n ≡ 0 -> 1 ≤ n
+    aux zero n0' with n0' refl
+    ... | ()
+    aux (suc n) n0' = Nat.s≤s Nat.z≤n
+
+
+ranky<1⇒y=0 : ∀ (y : 𝔾) -> rank y < 1# -> y ≡ 0#
+ranky<1⇒y=0 y r = rank=0⇒y=0 {y} ranky=0
+  where
+    aux : ∀ (n : ℕ) -> n < 1 -> n ≡ 0
+    aux .zero (Nat.s≤s Nat.z≤n) = refl
+
+    ranky=0 : rank y ≡ 0
+    ranky=0 = aux (rank y) r
+
+   
 -- ----------------------------------------------------------------------
 -- Properties of NonZero
 
