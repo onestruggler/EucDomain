@@ -444,12 +444,15 @@ open   EuclideanDomain.Bundles
 -- ----------------------------------------------------------------------
 -- Make a new instance for DivMod ℤ
 
+-- Translation between two nonzeros.
+nz : ∀ (x : ℤ) -> .{{NonZero x}} -> ¬ x ≡ 0#
+nz +[1+ n ] ()
+
+
 -- We use the newly defined div and mod function.
 instance
   new-DMℤ : DivMod ℤ
   new-DMℤ .NZT = NZTℤ
-  new-DMℤ ._/_ n d@(+[1+ n₁ ]) = div' n d λ {()} 
-  new-DMℤ ._/_ n d@(-[1+ n₁ ]) = div' n d λ {()} 
-  new-DMℤ ._%_ n d@(+[1+ n₁ ]) = mod' n d λ {()} 
-  new-DMℤ ._%_ n d@(-[1+ n₁ ]) = mod' n d λ {()} 
+  new-DMℤ ._/_ n d = div' n d (nz d)
+  new-DMℤ ._%_ n d = mod' n d (nz d)
 
