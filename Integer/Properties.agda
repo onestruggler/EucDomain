@@ -33,7 +33,7 @@ tri-eq (+_ a) (+_ b) = begin
 
 -- For all a, a * a is always non-negative.
 a*a=+b : ∀ a -> ∃ λ b → a * a ≡ + b
-a*a=+b (+_ a) = (a * a) , IntP.pos-distrib-* a a
+a*a=+b (+_ a) = (a * a) , sym (IntP.pos-* a a)
 a*a=+b (-[1+_] a) = suc a * suc a , refl
 
 0≤a*a : ∀ {a} → 0ℤ ≤ a * a 

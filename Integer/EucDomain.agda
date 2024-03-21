@@ -15,7 +15,7 @@ module Integer.EucDomain where
   open import Data.Integer
     using (_+_ ; _*_ ; -_ ; ℤ ; 0ℤ ; 1ℤ ; ∣_∣ ; +[1+_] ; -[1+_] ; +_)
   open import Data.Integer.DivMod
-    renaming (_div_ to _divℤ_; _mod_ to _modℤ_ ; n%d<d to euc-rankℤ; a≡a%n+[a/n]*n to euc-eqℤ)
+    renaming (_/_ to _divℤ_; _%_ to _modℤ_ ; n%d<d to euc-rankℤ; a≡a%n+[a/n]*n to euc-eqℤ)
   open import Data.Integer.Properties
     using (+-*-isCommutativeRing ; *-cancelˡ-≡)
 
@@ -85,10 +85,10 @@ module Integer.EucDomain where
 
   -- Multiplication is left cancellative. 
   *-alc-ℤ : AlmostLeftCancellative 0ℤ _*_
-  *-alc-ℤ {+ 0} j k n0 with n0 refl
+  *-alc-ℤ (+ 0) j k n0 with n0 refl
   ... | ()
-  *-alc-ℤ {i@(+[1+ n ])} j k n0 = *-cancelˡ-≡ i j k
-  *-alc-ℤ { i@(-[1+ n ])} j k n0 = *-cancelˡ-≡ i j k
+  *-alc-ℤ (i@(+[1+ n ])) j k n0 = *-cancelˡ-≡ i j k
+  *-alc-ℤ (i@(-[1+ n ])) j k n0 = *-cancelˡ-≡ i j k
 
   -- ℤ is an Euclidean Domain. 
   +-*-isEuclideanDomain : IsEuclideanDomain _+_ _*_ -_ 0ℤ 1ℤ

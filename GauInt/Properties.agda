@@ -295,7 +295,9 @@ comm-* x@(a + b i) y@(c + d i) = begin
 +-*-isSemiring = record
   { isSemiringWithoutAnnihilatingZero = record
     { +-isCommutativeMonoid = +-0-isCommutativeMonoid
-    ; *-isMonoid = *-1-isMonoid
+    ; *-cong = cong₂ _*_
+    ; *-assoc = assoc-*
+    ; *-identity = leftId-* , rightId-* 
     ; distrib = *-DistributesOver-+ˡ , *-DistributesOver-+ʳ 
     }
   ; zero = leftZero , rightZero 
@@ -310,9 +312,10 @@ comm-* x@(a + b i) y@(c + d i) = begin
 +-*-isRing : IsRing _+_ _*_ -_ 0# 1#
 +-*-isRing = record
   { +-isAbelianGroup = +-isAbelianGroup
-  ; *-isMonoid       = *-1-isMonoid
+  ; *-cong = cong₂ _*_
+  ; *-assoc =  assoc-*
+  ; *-identity = leftId-* , rightId-* 
   ; distrib          = *-DistributesOver-+ˡ , *-DistributesOver-+ʳ
-  ; zero             = leftZero , rightZero
   }
 
 +-*-isCommutativeRing : IsCommutativeRing _+_ _*_ -_ 0# 1#
@@ -430,7 +433,7 @@ rank-*-commute x@(a + b i) y@(c + d i) = claim
       rank (x * y)  ≡⟨ refl ⟩ 
       rank ((a * c - b * d) + (a * d + b * c) i) ≡⟨ refl ⟩
       ∣ (a * c - b * d)^2 + (a * d + b * c)^2 ∣ ≡⟨ cong ∣_∣ (solve 4 (λ a b c d → (a :* c :- b :* d) :* (a :* c :- b :* d) :+ (a :* d :+ b :* c) :* (a :* d :+ b :* c) := (a :* a :+ b :* b) :* (c :* c :+ d :* d)) refl a b c d) ⟩
-      ∣ (a ^2 + b ^2) * (c ^2 + d ^2) ∣ ≡⟨ IntP.abs-*-commute ((a ^2 + b ^2)) ((c ^2 + d ^2)) ⟩
+      ∣ (a ^2 + b ^2) * (c ^2 + d ^2) ∣ ≡⟨ IntP.abs-* ((a ^2 + b ^2)) ((c ^2 + d ^2)) ⟩
       ∣ a ^2 + b ^2 ∣ * ∣ c ^2 + d ^2 ∣ ≡⟨ refl ⟩
       rank x * rank y ∎
 
@@ -457,7 +460,7 @@ rank+0i=y*yᶜ {y} = sym $ begin
 +0i-+-commute a b = refl 
 
 +0i-*-commute : ℕto𝔾.Homomorphic₂ _+0i Nat._*_ _*_
-+0i-*-commute a b rewrite NatP.*-zeroˡ a | NatP.*-zeroˡ b | NatP.*-zeroʳ a | NatP.*-zeroʳ b | sym (IntP.pos-distrib-* a b) | IntP.+-identityʳ (+ a * + b) = refl
++0i-*-commute a b rewrite NatP.*-zeroˡ a | NatP.*-zeroˡ b | NatP.*-zeroʳ a | NatP.*-zeroʳ b | (IntP.pos-* a b) | IntP.+-identityʳ (+ a * + b) = refl
 
 0+0i=0 : 0 +0i ≡ 0#
 0+0i=0 = refl 
@@ -605,7 +608,7 @@ zero-divisor-is-zero {x@(a + b i)} {y@(c + d i)} eq neq = cong₂ _+_i (proj₁ 
 
 -- Almost left cancellative.
 *-alc-𝔾 : AlmostLeftCancellative 0𝔾 _*_
-*-alc-𝔾 {x@(a + b i)} y@(c + d i) z@(e + f i)  neq eq = y=z
+*-alc-𝔾 x@(a + b i) y@(c + d i) z@(e + f i)  neq eq = y=z
   where
     onesided-eq : x * (y + (- z)) ≡ 0#
     onesided-eq = begin
@@ -647,7 +650,7 @@ y≠0⇒y*yᶜ≠0 {y} n0 eq  = ⊥-elim (n0' e0)
               open ≡-Reasoning
 
         e0 : y ᶜ ≡ 0#
-        e0 = *-alc-𝔾 {y} (y ᶜ) 0# n0 eq'
+        e0 = *-alc-𝔾 y (y ᶜ) 0# n0 eq'
 
 
 y≠0#⇒rank≠0 : ∀ {y : 𝔾} -> ¬ y ≡ 0# -> ¬ rank y ≡ 0#

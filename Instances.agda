@@ -72,8 +72,8 @@ instance
 instance
   DMℤ : DivMod Int.ℤ
   DMℤ .NZT = NZTℤ 
-  DMℤ ._/_ = IDM._div_
-  DMℤ ._%_ n d = Int.+ (n IDM.mod d) 
+  DMℤ ._/_ = IDM._/_
+  DMℤ ._%_ n d = Int.+ (n IDM.% d) 
 
 -- Identity function can be used as the rank function.     
 instance

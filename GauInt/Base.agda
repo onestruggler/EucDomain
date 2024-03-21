@@ -7,7 +7,7 @@ module GauInt.Base where
 
 open import Data.Bool using (Bool ; true ; false ; T ; not ; _∧_)
 open import Data.Nat using (ℕ ; _≡ᵇ_)
-open import Data.Integer renaming (-_ to -ℤ_ ; _-_ to _-ℤ_ ; _+_ to _+ℤ_ ; _*_ to _*ℤ_ ) hiding (NonZero)
+open import Data.Integer renaming (-_ to -ℤ_ ; _-_ to _-ℤ_ ; _+_ to _+ℤ_ ; _*_ to _*ℤ_ ) hiding (NonZero ; nonZero)
 
 infix  4 _==_ -- boolean equality on 𝔾.
 infix  4 _==ℤ_ -- boolean equality on ℤ.
