@@ -10,4 +10,4 @@
 
 Note:
 
-We use the Agda version 2.6.2, and Agda stdlib verion 2.0. 
+We use the Agda version 2.6.5, and Agda stdlib verion 2.0 released on Dec 12, 2023. 
