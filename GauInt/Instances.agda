@@ -1,27 +1,25 @@
 -- Instances of Gaussian integers.
+--
+-- The ring structure (SemiRing, Ring, DecEq, Adjoint, NormedRing,
+-- ComplexRing, ...) of 𝔾 = ℤ [i] comes from the generic instances of
+-- Quantum.Synthesis.Ring. Here we give the instances specific to the
+-- Euclidean structure: Rank and NonZero.
 
 {-# OPTIONS --without-K --safe  #-}
 
 module GauInt.Instances where
 
+open import Data.Bool using (true ; false ; not ; T)
+open import Data.Empty using (⊥)
 open import Data.Integer using (+_ ; -[1+_] ; +[1+_])
 open import Data.Nat using (suc )
+open import Relation.Nullary using (yes ; no)
 
-open import Instances
-open import GauInt.Base renaming (-_ to -𝔾_ ; _-_ to _-𝔾_ ; _+_ to _+𝔾_ ; _*_ to _*𝔾_ ; NonZero to NonZero𝔾 ; rank to rank𝔾)
-
--- Instances to overload operations.
-instance
-  sr𝔾 : SemiRing 𝔾
-  _+_ {{sr𝔾}} = _+𝔾_
-  _*_ {{sr𝔾}} = _*𝔾_
-  0# {{sr𝔾}} = 0𝔾
-  1# {{sr𝔾}} = 1𝔾
-
-instance
-  ring𝔾 : Ring 𝔾 
-  ring𝔾 .sra = sr𝔾
-  ring𝔾 .-_ = -𝔾_
+open import Instances hiding (i)
+open import Quantum.Synthesis.Ring public
+  using (_[i] ; Cplx ; SemiRingCplx ; RingCplx ; DecEqCplx ; AdjointCplx ; Adjoint2Cplx ;
+         NormedRingCplx ; ComplexRingCplx ; ShowZComplex ; NumberCplx ; NegativeCplx)
+open import GauInt.Base renaming (NonZero to NonZero𝔾 ; rank to rank𝔾 ; _==_ to _==𝔾_)
 
 instance
   Rank𝔾 : Rank 𝔾
@@ -44,25 +42,13 @@ instance
 
 instance
   NZT𝔾 : NonZeroTypeclass 𝔾
-  NZT𝔾 .NonZero = NonZero𝔾 
-
-
-{-
-
--- Translation from NonZero predicate to non-equality.
-test-t : ∀ (x : 𝔾) -> .{{NonZero x}} -> ¬ x ≡ 0#
-test-t (+_ zero + +[1+ n ] i) = λ {()}
-test-t (+_ zero + -[1+_] n i) = λ {()}
-test-t (+[1+ n ] + x₁ i) = λ {()}
-test-t (-[1+_] n + x₁ i) = λ {()}
-
-
-open import Relation.Binary.Structures 
-open IsDecEquivalence {{...}}
-open IsDecTotalOrder {{...}}
-open import Data.Nat.Instances
-open import Data.Integer.Instances
-test : {!!} 
-test = 0ℤ ≤? 0ℤ
-
--}
+  NZT𝔾 .NonZero = NonZero𝔾
+  NZT𝔾 .nonZero? x with x ==𝔾 0𝔾 in eq
+  ... | true = no λ nz -> aux (NonZero𝔾.nonZero nz)
+    where
+      aux : T (not (x ==𝔾 0𝔾)) -> ⊥
+      aux t rewrite eq = t
+  ... | false = yes record { nonZero = aux }
+    where
+      aux : T (not (x ==𝔾 0𝔾))
+      aux rewrite eq = _

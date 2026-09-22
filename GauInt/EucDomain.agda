@@ -9,7 +9,7 @@ module GauInt.EucDomain where
 
 -- Hiding the usual div and mod function. We will the new instance in
 -- Integer.EucDomain2
-import Instances hiding (DMℤ)
+import Instances hiding (DMℤ ; i)
 open Instances
 
 open import Integer.EucDomain2
@@ -214,7 +214,7 @@ euc-rank' x@(a + b i) d@(suc e) n0 = le
     lem3 = begin
       rank y ≡⟨ refl ⟩ 
       ∣ (+ d) * (+ d) + 0ℤ * 0ℤ ∣  ≡⟨ cong ∣_∣ (solve 1 (λ x → x :* x :+ con 0ℤ :* con 0ℤ := x :* x) refl (+ d)) ⟩ 
-      ∣ (+ d) * (+ d) ∣     ≡⟨ IntP.abs-*-commute (+ d) (+ d) ⟩ 
+      ∣ (+ d) * (+ d) ∣     ≡⟨ IntP.abs-* (+ d) (+ d) ⟩ 
       ∣ (+ d) ∣ * ∣ (+ d) ∣     ≡⟨ refl ⟩ 
       d * d  ∎
         where
@@ -232,7 +232,7 @@ euc-rank' x@(a + b i) d@(suc e) n0 = le
       rank r                ≡⟨ refl ⟩
       let (sa , sae) = (a*a=+b ra) in let (sb , sbe) = a*a=+b rb in
       ∣ ra * ra + rb * rb ∣  ≡⟨ tri-eq' ra rb ⟩ 
-      ∣ ra * ra ∣ + ∣ rb * rb ∣ ≡⟨ cong₂ _+_ (IntP.abs-*-commute ra ra) (IntP.abs-*-commute rb rb) ⟩
+      ∣ ra * ra ∣ + ∣ rb * rb ∣ ≡⟨ cong₂ _+_ (IntP.abs-* ra ra) (IntP.abs-* rb rb) ⟩
       ∣ ra ∣ * ∣ ra ∣ + ∣ rb ∣ * ∣ rb ∣  ≤⟨ NatP.+-mono-≤ (NatP.*-mono-≤ lea lea) (NatP.*-mono-≤ leb leb) ⟩
       (d / 2) * (d / 2) + (d / 2) * (d / 2) ≡⟨ solve 1 (λ x → (x :* x) :+ (x :* x) := x :* (x :+ x)) refl (d / 2) ⟩
       (d / 2) * ((d / 2) + (d / 2)) ≤⟨ NatP.*-monoʳ-≤ (d / 2) lem1 ⟩ 
@@ -333,7 +333,7 @@ euc-rank x y n0 = claim
 
     -- (le') & (eqr) ⇒ rank (x - q' * y) < rank y since rank y ᶜ ≠ 0.
     claim : rank (x - q' * y) < rank y
-    claim = NatP.*-cancelʳ-< {rank (y ᶜ)} (rank (x - q * y)) (rank y) eqr'
+    claim = NatP.*-cancelʳ-< (rank (y ᶜ)) (rank (x - q * y)) (rank y) eqr'
       where
         eqr' : rank (x - q' * y) * rank (y ᶜ) < rank y * rank (y ᶜ)
         eqr' = begin-strict

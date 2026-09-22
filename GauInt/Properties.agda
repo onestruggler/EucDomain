@@ -8,7 +8,7 @@ module GauInt.Properties where
 
 -- imports from local.
 open import GauInt.Instances
-open import Instances
+open import Instances hiding (i ; _≟_)
 open import GauInt.Base using (𝔾 ; _+_i ; _ᶜ ; Re ; Im ; _+0i ; _+0i' ; 0𝔾)
 open import Integer.Properties
 
@@ -216,14 +216,14 @@ rightId-* x@(a + b i) = begin
   (a + b i) ∎   
 
 -- Zero leftly times any number is zero. 
-leftZero : ∀ x -> (0# + 0# i) * x ≡ (0# + 0# i)
+leftZero : ∀ (x : 𝔾) -> (0# + 0# i) * x ≡ (0# + 0# i)
 leftZero x@(a + b i)  = begin
   (0# + 0# i) * (a + b i) ≡⟨ refl ⟩
   (0#  * a - 0#  * b) +   (0#  * a - 0#  * b) i  ≡⟨ refl ⟩
   0# + 0# i ∎   
 
 -- Zero rightly times any number is zero. 
-rightZero : ∀ x -> x * (0# + 0# i) ≡ (0# + 0# i)
+rightZero : ∀ (x : 𝔾) -> x * (0# + 0# i) ≡ (0# + 0# i)
 rightZero x@(a + b i)  = begin
   (a + b i) * (0# + 0# i)  ≡⟨ refl  ⟩
   (a * 0#  - b * 0# ) + (a * 0#  + b *  0# ) i  ≡⟨ cong₂ _+_i ((let _*_ = _:*_ in let _+_ = _:+_ in let _-_ = _:-_ in  (solve 2 (\ a b -> (a * con 0#) - (b * con 0# ) := con 0#) refl a b))) ((let _*_ = _:*_ in let _+_ = _:+_ in let _-_ = _:-_ in  (solve 2 (\ a b -> (a * con 0#) + (b * con 0# ) := con 0#) refl a b)))   ⟩
@@ -460,7 +460,7 @@ rank+0i=y*yᶜ {y} = sym $ begin
 +0i-+-commute a b = refl 
 
 +0i-*-commute : ℕto𝔾.Homomorphic₂ _+0i Nat._*_ _*_
-+0i-*-commute a b rewrite NatP.*-zeroˡ a | NatP.*-zeroˡ b | NatP.*-zeroʳ a | NatP.*-zeroʳ b | (IntP.pos-* a b) | IntP.+-identityʳ (+ a * + b) = refl
++0i-*-commute a b rewrite NatP.*-zeroˡ a | NatP.*-zeroˡ b | NatP.*-zeroʳ a | (IntP.pos-* a b) | IntP.+-identityʳ (+ a * + b) = refl
 
 0+0i=0 : 0 +0i ≡ 0#
 0+0i=0 = refl 

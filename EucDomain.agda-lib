@@ -1,0 +1,3 @@
+name: EucDomain
+depend: standard-library-2.4
+include: .

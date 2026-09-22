@@ -84,8 +84,9 @@ import Data.Nat.Properties as NatP
 open import Data.Integer as Int
   using (ℤ ; ∣_∣ ; +_ ; +[1+_] ; -[1+_] ; 1ℤ ; _◃_ ; +<+ ; -<- ; -≤- ; -<+ ; -≤+ ; +≤+ ; 0ℤ)
 import Data.Integer.Properties as IntP
+-- (_/_ and _%_ are imported under their pre-2.0 names div and mod.)
 open import Data.Integer.DivMod
-  using (_div_ ; _mod_ ; a≡a%n+[a/n]*n ; n%d<d)
+  using (a≡a%n+[a/n]*n ; n%d<d) renaming (_/_ to _div_ ; _%_ to _mod_)
 open import Data.Integer.Solver
 
 
@@ -280,7 +281,7 @@ euc-rank' n d@(+[1+ e ]) n0 with n mod d ≤? ∣ d ∣ / 2
 
         claim2 : + (d / 2)  +  + (d / 2) ≡  + d
         claim2 = begin
-          + (d / 2)  +  + (d / 2) ≡⟨ IntP.pos-+-commute (d / 2) (d / 2) ⟩
+          + (d / 2)  +  + (d / 2) ≡⟨ IntP.pos-+ (d / 2) (d / 2) ⟩
           + (d / 2 + d / 2) ≡⟨ cong +_ hyp ⟩
           + d ∎
 
@@ -306,8 +307,8 @@ euc-rank' n d@(+[1+ e ]) n0 with n mod d ≤? ∣ d ∣ / 2
     step5b d hyp = begin
           + d - + (d / 2)  ≡⟨ cong (λ x → + x - + (d / 2)) (sym hyp) ⟩ 
           + (suc (d / 2 + d / 2))  - + (d / 2) ≡⟨ refl ⟩
-          + (1 + (d / 2 + d / 2))  - + (d / 2) ≡⟨ cong (_- + (d / 2)) (IntP.pos-+-commute 1 (d / 2 + d / 2)) ⟩
-          + 1 + + (d / 2 + d / 2) - + (d / 2) ≡⟨ cong (λ x → + 1 + x - + (d / 2)) (IntP.pos-+-commute (d / 2) (d / 2)) ⟩
+          + (1 + (d / 2 + d / 2))  - + (d / 2) ≡⟨ cong (_- + (d / 2)) (IntP.pos-+ 1 (d / 2 + d / 2)) ⟩
+          + 1 + + (d / 2 + d / 2) - + (d / 2) ≡⟨ cong (λ x → + 1 + x - + (d / 2)) (IntP.pos-+ (d / 2) (d / 2)) ⟩
           + 1 +  + (d / 2) + + (d / 2) - + (d / 2) ≡⟨ solve 1 (λ x → (con 1ℤ) :+ (x :+ x) :- x := x :+ con 1ℤ) refl (+ (d / 2)) ⟩
           + (d / 2) + 1ℤ ∎
             where
