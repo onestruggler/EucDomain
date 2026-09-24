@@ -19,6 +19,46 @@ open import Instances
 open import Literals
 open import Quantum.Synthesis.Ring
 open import Quantum.Synthesis.Matrix
+open import Test.Ring using (FourBase ; inverse-one-plus-omega)
+
+-- Base selection propagates through vectors and rectangular matrices.
+denominator-example : Matrix 2 3 DRootTwo
+denominator-example = Matrix'
+  ((½ ∷ 0 ∷ []) ∷ (√½ ∷ 1 ∷ []) ∷ (½ ^ 3 ∷ (- ½) ∷ []) ∷ [])
+
+_ : denomexp denominator-example ≡ 6
+_ = refl
+_ : denomexpBy TwoBase denominator-example ≡ 3
+_ = refl
+_ : denomexp-decomposeBy {Matrix 2 3 DRootTwo} {Matrix 2 3 ZRootTwo}
+      TwoBase denominator-example ≡
+      (Matrix' ((4 ∷ 0 ∷ []) ∷ (4 * √2 ∷ 8 ∷ []) ∷ (1 ∷ -4 ∷ []) ∷ []) , 3)
+_ = refl
+_ : denomexpBy TwoBase (Matrix 0 2 Dyadic ∋ Matrix' ([] ∷ [] ∷ [])) ≡ 0
+_ = refl
+_ : denomexpBy FourBase (Matrix 2 0 Dyadic ∋ Matrix' []) ≡ 0
+_ = refl
+_ : denomexp-decomposeBy {Vector 2 Dyadic} {Vector 2 ℤ} FourBase
+      (½ ∷ dyadic 1 3 ∷ []) ≡ ((8 ∷ 2 ∷ []) , 2)
+_ = refl
+_ : denomexp-decomposeBy {Matrix 1 1 Dyadic} {Matrix 1 1 ℤ} FourBase
+      (Matrix' ((dyadic 1 3 ∷ []) ∷ [])) ≡ (Matrix' ((2 ∷ []) ∷ []) , 2)
+_ = refl
+
+-- Complex bases act by multiplication, mixing scalar coordinates while
+-- the matrix instance still selects the maximum entry exponent.
+_ : denomexp-decomposeBy {Matrix 1 2 DComplex} {Matrix 1 2 ZComplex} OnePlusIBase
+      (Matrix' ((½ * (1 - i) ∷ []) ∷ (½ ∷ []) ∷ [])) ≡
+      (Matrix' ((1 + i ∷ []) ∷ (i ∷ []) ∷ []) , 2)
+_ = refl
+_ : denomexp-decomposeBy {Matrix 2 1 DOmega} {Matrix 2 1 ZOmega} OnePlusOmegaBase
+      (Matrix' ((inverse-one-plus-omega ∷ inverse-one-plus-omega ^ 3 ∷ []) ∷ [])) ≡
+      (Matrix' (((1 + ω) ^ 2 ∷ 1 ∷ []) ∷ []) , 3)
+_ = refl
+_ : denomexpBy OnePlusIBase (Matrix 0 2 DComplex ∋ Matrix' ([] ∷ [] ∷ [])) ≡ 0
+_ = refl
+_ : denomexpBy OnePlusOmegaBase (Matrix 2 0 DOmega ∋ Matrix' []) ≡ 0
+_ = refl
 
 A B : Matrix Two Two ℤ
 A = matrix2x2 (1 , 2) (3 , 4)

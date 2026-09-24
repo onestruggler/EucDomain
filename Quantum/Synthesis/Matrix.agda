@@ -243,9 +243,9 @@ instance
   WholePartVector .from-whole = vector-map from-whole
   WholePartVector .to-whole = vector-map to-whole
 
-  DenomExpVector : {n : ℕ} {A : Set} {{_ : DenomExp A}} -> DenomExp (Vector n A)
-  DenomExpVector .denomexp as = denomexp (list-of-vector as)
-  DenomExpVector .denomexp-factor as k = vector-map (λ a -> denomexp-factor a k) as
+  DenomExpVector : {Base : Set} {n : ℕ} {A : Set} {{_ : DenomExp Base A}} -> DenomExp Base (Vector n A)
+  DenomExpVector {Base} .DenomExp.denomexp as = denomexpBy Base (list-of-vector as)
+  DenomExpVector {Base} .DenomExp.denomexp-factor as k = vector-map (λ a -> denomexp-factorBy Base a k) as
 
 -- ----------------------------------------------------------------------
 -- * Matrices
@@ -396,9 +396,9 @@ instance
   WholePartMatrix .from-whole (Matrix' a) = Matrix' (from-whole a)
   WholePartMatrix .to-whole (Matrix' a) = Matrix' (to-whole a)
 
-  DenomExpMatrix : {m n : ℕ} {A : Set} {{_ : DenomExp A}} -> DenomExp (Matrix m n A)
-  DenomExpMatrix .denomexp (Matrix' a) = denomexp a
-  DenomExpMatrix .denomexp-factor (Matrix' a) k = Matrix' (denomexp-factor a k)
+  DenomExpMatrix : {Base : Set} {m n : ℕ} {A : Set} {{_ : DenomExp Base A}} -> DenomExp Base (Matrix m n A)
+  DenomExpMatrix {Base} .DenomExp.denomexp (Matrix' a) = denomexpBy Base a
+  DenomExpMatrix {Base} .DenomExp.denomexp-factor (Matrix' a) k = Matrix' (denomexp-factorBy Base a k)
 
 -- The ring of square matrices.
 module _ {A : Set} {{_ : Ring A}} {n : ℕ} where

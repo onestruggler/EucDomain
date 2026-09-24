@@ -6,6 +6,7 @@ module Test.LaTeX where
 open import Data.List.Base using (List ; [] ; _∷_)
 open import Data.Float.Base as Float using (Float)
 open import Data.Product.Base using (_,_)
+open import Data.Integer.Base using (ℤ)
 open import Function.Base using (_∋_)
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl)
 
@@ -17,6 +18,21 @@ open import Quantum.Synthesis.MultiQubitSynthesis
 open import Quantum.Synthesis.CliffordT
 open import Quantum.Synthesis.SymReal
 open import Quantum.Synthesis.LaTeX
+open import Test.Ring using (inverse-one-plus-omega)
+
+_ : showlatex-denomexpBy-p {Dyadic} {ℤ} TwoBase "2" 0 (dyadic 1 3)
+      ≡ "\\frac{1}{2^{3}}1"
+_ = refl
+_ : showlatex-denomexpBy-p {Dyadic} {ℤ} TwoBase "2" 0 ½ ≡ "\\frac{1}{2}1"
+_ = refl
+_ : showlatex-denomexpBy-p {Dyadic} {ℤ} TwoBase "2" 0 3 ≡ "3"
+_ = refl
+_ : showlatex-denomexpBy-p {DOmega} {ZOmega} OnePlusOmegaBase "(1+\\omega)" 0
+      (inverse-one-plus-omega ^ 3) ≡ "\\frac{1}{(1+\\omega)^{3}}(1)"
+_ = refl
+_ : showlatex-denomexpBy-p {DComplex} {ZComplex} OnePlusIBase "(1+i)" 0
+      (½ * (1 - i)) ≡ "\\frac{1}{(1+i)}1"
+_ = refl
 
 _ : showlatex (TL-X 0 1 ∷ TL-T -1 2 3 ∷ TL-omega 1 0 ∷ TL-T 8 0 1 ∷ []) ≡ "X\\level{1,2} T^7\\level{3,4} \\omega\\level{1} "
 _ = refl

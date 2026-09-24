@@ -941,41 +941,62 @@ instance
 -- ----------------------------------------------------------------------
 -- * Common denominators
 
--- A type class for things from which a common power of 1/√2 (a least
--- denominator exponent) can be factored out. Typical instances are
--- DRootTwo, DRComplex, as well as tuples, lists, vectors, and
--- matrices thereof.
-record DenomExp (A : Set) : Set where
+-- Base tags distinguish denominator conventions on the same carrier.
+-- Clients can declare their own tag types; no tag values are needed.
+data SqrtTwoBase : Set where
+data TwoBase : Set where
+data OnePlusIBase : Set where
+data OnePlusOmegaBase : Set where
+
+-- A common power of the selected base can be factored out. Each instance
+-- specifies its base's action and the corresponding notion of integrality.
+-- As with the other operational classes, the laws are obligations of the
+-- instance, rather than proof fields of this record.
+record DenomExp (Base A : Set) : Set where
   field
-    -- Calculate the least denominator exponent k of a. Returns the
-    -- smallest k ≥ 0 such that a = b/√2ᵏ for some integral b.
+    -- Smallest k ≥ 0 for which multiplying a by base^k is integral.
     denomexp : A -> ℕ
-    -- Factor out a kth power of 1/√2 from a. In other words,
-    -- calculate a√2ᵏ.
+    -- Multiply by base^k; for containers, act on every entry.
     denomexp-factor : A -> ℕ -> A
-open DenomExp {{...}} public
 
--- Calculate and factor out the least denominator exponent k of a.
--- Return (b,k), where a = b/(√2)ᵏ and k ≥ 0.
-denomexp-decompose : {A B : Set} {{_ : WholePart A B}} {{_ : DenomExp A}} -> A -> B × ℕ
-denomexp-decompose a = to-whole (denomexp-factor a k) , k
-  where k = denomexp a
+denomexpBy : (Base : Set) {A : Set} {{d : DenomExp Base A}} -> A -> ℕ
+denomexpBy Base {{d}} = DenomExp.denomexp d
 
--- Generic show-like method that factors out a common denominator
--- exponent.
-showsPrec-DenomExp : {A B : Set} {{_ : WholePart A B}} {{_ : Show B}} {{_ : DenomExp A}} -> ℕ -> A -> String
-showsPrec-DenomExp {A} {B} d a with denomexp-decompose {A} {B} a
+denomexp-factorBy : (Base : Set) {A : Set} {{d : DenomExp Base A}} -> A -> ℕ -> A
+denomexp-factorBy Base {{d}} = DenomExp.denomexp-factor d
+
+-- Return the whole numerator and its least exponent in the selected base.
+denomexp-decomposeBy : {A B : Set} (Base : Set) {{_ : WholePart A B}} {{_ : DenomExp Base A}} -> A -> B × ℕ
+denomexp-decomposeBy Base a = to-whole (denomexp-factorBy Base a k) , k
+  where k = denomexpBy Base a
+
+-- The unqualified interface retains newsynth's √2 convention.
+denomexp : {A : Set} {{_ : DenomExp SqrtTwoBase A}} -> A -> ℕ
+denomexp = denomexpBy SqrtTwoBase
+
+denomexp-factor : {A : Set} {{_ : DenomExp SqrtTwoBase A}} -> A -> ℕ -> A
+denomexp-factor = denomexp-factorBy SqrtTwoBase
+
+denomexp-decompose : {A B : Set} {{_ : WholePart A B}} {{_ : DenomExp SqrtTwoBase A}} -> A -> B × ℕ
+denomexp-decompose = denomexp-decomposeBy SqrtTwoBase
+
+-- Supply the inverse-base expression explicitly (parenthesized if composite).
+showsPrec-DenomExpBy : {A B : Set} (Base : Set) -> String -> {{_ : WholePart A B}} {{_ : Show B}} {{_ : DenomExp Base A}} -> ℕ -> A -> String
+showsPrec-DenomExpBy {A} {B} Base inverseBase d a with denomexp-decomposeBy {A} {B} Base a
 ... | b , zero = showsPrec d b
-... | b , suc zero = showParen d 7 ("roothalf * " ++ showsPrec 7 b)
-... | b , k = showParen d 7 ("roothalf^" ++ show k ++ " * " ++ showsPrec 7 b)
+... | b , suc zero = showParen d 7 (inverseBase ++ " * " ++ showsPrec 7 b)
+... | b , k = showParen d 7 (inverseBase ++ "^" ++ show k ++ " * " ++ showsPrec 7 b)
+
+showsPrec-DenomExp : {A B : Set} {{_ : WholePart A B}} {{_ : Show B}} {{_ : DenomExp SqrtTwoBase A}} -> ℕ -> A -> String
+showsPrec-DenomExp = showsPrec-DenomExpBy SqrtTwoBase "roothalf"
 
 instance
-  DenomExpDRootTwo : DenomExp DRootTwo
-  DenomExpDRootTwo .denomexp (RootTwo (Dyadic' _ k _) (Dyadic' _ l _)) = max (2 * k) (2 * l Nat.∸ 1)
-  DenomExpDRootTwo .denomexp-factor a k = a * roottwo ^ k
+  DenomExpDRootTwo : DenomExp SqrtTwoBase DRootTwo
+  DenomExpDRootTwo .DenomExp.denomexp (RootTwo (Dyadic' _ k _) (Dyadic' _ l _)) = max (2 * k) (2 * l Nat.∸ 1)
+  DenomExpDRootTwo .DenomExp.denomexp-factor a k = a * roottwo ^ k
 
-  DenomExpDOmega : DenomExp DOmega
-  DenomExpDOmega .denomexp (Omega (Dyadic' a ak _) (Dyadic' b bk _) (Dyadic' c ck _) (Dyadic' d dk _)) =
+  DenomExpDOmega : DenomExp SqrtTwoBase DOmega
+  DenomExpDOmega .DenomExp.denomexp (Omega (Dyadic' a ak _) (Dyadic' b bk _) (Dyadic' c ck _) (Dyadic' d dk _)) =
     if (0 <ᵇ k) ∧ evenℤ (a' - c') ∧ evenℤ (b' - d') then 2 * k Nat.∸ 1 else 2 * k
     where
       k = max (max ak bk) (max ck dk)
@@ -983,23 +1004,81 @@ instance
       b' = if k == bk then b else 0
       c' = if k == ck then c else 0
       d' = if k == dk then d else 0
-  DenomExpDOmega .denomexp-factor a k = a * roottwo ^ k
+  DenomExpDOmega .DenomExp.denomexp-factor a k = a * roottwo ^ k
 
-  DenomExpPair : {A B : Set} {{_ : DenomExp A}} {{_ : DenomExp B}} -> DenomExp (A × B)
-  DenomExpPair .denomexp (a , b) = max (denomexp a) (denomexp b)
-  DenomExpPair .denomexp-factor (a , b) k = denomexp-factor a k , denomexp-factor b k
+  DenomExpDyadicTwo : DenomExp TwoBase Dyadic
+  DenomExpDyadicTwo .DenomExp.denomexp (Dyadic' _ k _) = k
+  DenomExpDyadicTwo .DenomExp.denomexp-factor a k = a * (1# + 1#) ^ k
 
-  DenomExpUnit : DenomExp ⊤
-  DenomExpUnit .denomexp _ = 0
-  DenomExpUnit .denomexp-factor _ _ = _
+  DenomExpDRootTwoTwo : DenomExp TwoBase DRootTwo
+  DenomExpDRootTwoTwo .DenomExp.denomexp (RootTwo a b) = max (denomexpBy TwoBase a) (denomexpBy TwoBase b)
+  DenomExpDRootTwoTwo .DenomExp.denomexp-factor (RootTwo a b) k =
+    RootTwo (denomexp-factorBy TwoBase a k) (denomexp-factorBy TwoBase b k)
 
-  DenomExpList : {A : Set} {{_ : DenomExp A}} -> DenomExp (List A)
-  DenomExpList .denomexp as = foldr (λ a k -> max (denomexp a) k) 0 as
-  DenomExpList .denomexp-factor as k = map (λ a -> denomexp-factor a k) as
+  DenomExpDOmegaTwo : DenomExp TwoBase DOmega
+  DenomExpDOmegaTwo .DenomExp.denomexp (Omega a b c d) =
+    max (max (denomexpBy TwoBase a) (denomexpBy TwoBase b))
+        (max (denomexpBy TwoBase c) (denomexpBy TwoBase d))
+  DenomExpDOmegaTwo .DenomExp.denomexp-factor a k = a * (1# + 1#) ^ k
 
-  DenomExpCplx : {A : Set} {{_ : DenomExp A}} -> DenomExp (A [i])
-  DenomExpCplx .denomexp (Cplx a b) = max (denomexp a) (denomexp b)
-  DenomExpCplx .denomexp-factor (Cplx a b) k = Cplx (denomexp-factor a k) (denomexp-factor b k)
+  -- (1+i)^2 = 2i. After clearing powers of 2, a+bi is divisible
+  -- by 1+i exactly when a and b have the same parity. Minimality of
+  -- the base-2 exponent rules out two further factors of 1+i.
+  DenomExpDComplexOnePlusI : DenomExp OnePlusIBase DComplex
+  DenomExpDComplexOnePlusI .DenomExp.denomexp (Cplx a b) with align a b
+  ... | a' , b' , k = if evenℤ (a' + b') then 2 * k Nat.∸ 1 else 2 * k
+  DenomExpDComplexOnePlusI .DenomExp.denomexp-factor a k = a * (1# + i) ^ k
+
+  -- Use the independent coefficients of 1 and √2 over the Gaussian
+  -- integers: the distinguished whole ring here is ℤ[√2,i], not ℤ[ω].
+  DenomExpDRComplexOnePlusI : DenomExp OnePlusIBase DRComplex
+  DenomExpDRComplexOnePlusI .DenomExp.denomexp (Cplx (RootTwo a b) (RootTwo c d)) =
+    max (denomexpBy OnePlusIBase (Cplx a c)) (denomexpBy OnePlusIBase (Cplx b d))
+  DenomExpDRComplexOnePlusI .DenomExp.denomexp-factor a k = a * (1# + i) ^ k
+
+  -- In ℤ[ω], 1+i = ω√2 and ω is a unit, so the exponents agree.
+  DenomExpDOmegaOnePlusI : DenomExp OnePlusIBase DOmega
+  DenomExpDOmegaOnePlusI .DenomExp.denomexp = denomexp
+  DenomExpDOmegaOnePlusI .DenomExp.denomexp-factor a k = a * (1# + i) ^ k
+
+  -- Put δ = 1+ω. Then δ² = √2 * ω(1+√2), with unit ω(1+√2).
+  -- A whole numerator aω³+bω²+cω+d is divisible by δ iff its
+  -- coefficient sum is even (ω maps to 1 in the quotient F₂).
+  -- A least √2 denominator leaves at most one factor of δ to cancel.
+  -- Truncated subtraction also gives exponent zero on integral inputs.
+  DenomExpDOmegaOnePlusOmega : DenomExp OnePlusOmegaBase DOmega
+  DenomExpDOmegaOnePlusOmega .DenomExp.denomexp a = exponent (denomexp-decompose {DOmega} {ZOmega} a)
+    where
+      exponent : ZOmega × ℕ -> ℕ
+      exponent (Omega a b c d , k) = if evenℤ (a + b + c + d) then 2 * k Nat.∸ 1 else 2 * k
+  DenomExpDOmegaOnePlusOmega .DenomExp.denomexp-factor a k = a * (1# + ω) ^ k
+
+  DenomExpPair : {Base A B : Set} {{_ : DenomExp Base A}} {{_ : DenomExp Base B}} -> DenomExp Base (A × B)
+  DenomExpPair {Base} .DenomExp.denomexp (a , b) = max (denomexpBy Base a) (denomexpBy Base b)
+  DenomExpPair {Base} .DenomExp.denomexp-factor (a , b) k = denomexp-factorBy Base a k , denomexp-factorBy Base b k
+
+  DenomExpUnit : {Base : Set} -> DenomExp Base ⊤
+  DenomExpUnit .DenomExp.denomexp _ = 0
+  DenomExpUnit .DenomExp.denomexp-factor _ _ = _
+
+  DenomExpList : {Base A : Set} {{_ : DenomExp Base A}} -> DenomExp Base (List A)
+  DenomExpList {Base} .DenomExp.denomexp as = foldr (λ a k -> max (denomexpBy Base a) k) 0 as
+  DenomExpList {Base} .DenomExp.denomexp-factor as k = map (λ a -> denomexp-factorBy Base a k) as
+
+-- Lift a coefficient-ring base through a complex extension. This is an
+-- explicit builder: a generic instance would overlap the 1+i instances,
+-- whose action mixes coordinates. Register automatic lifts only for
+-- the real base tags; clients can register this builder for their own tags.
+DenomExpCplx : {Base A : Set} {{_ : DenomExp Base A}} -> DenomExp Base (A [i])
+DenomExpCplx {Base} .DenomExp.denomexp (Cplx a b) = max (denomexpBy Base a) (denomexpBy Base b)
+DenomExpCplx {Base} .DenomExp.denomexp-factor (Cplx a b) k = Cplx (denomexp-factorBy Base a k) (denomexp-factorBy Base b k)
+
+instance
+  DenomExpCplxSqrtTwo : {A : Set} {{_ : DenomExp SqrtTwoBase A}} -> DenomExp SqrtTwoBase (A [i])
+  DenomExpCplxSqrtTwo = DenomExpCplx
+
+  DenomExpCplxTwo : {A : Set} {{_ : DenomExp TwoBase A}} -> DenomExp TwoBase (A [i])
+  DenomExpCplxTwo = DenomExpCplx
 
 -- ----------------------------------------------------------------------
 -- Show instances for the particular rings. Elements of 𝔻[ω] and

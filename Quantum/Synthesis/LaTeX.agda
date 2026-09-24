@@ -235,11 +235,14 @@ private
 
 -- Generic showlatex-like method that factors out a common denominator
 -- exponent.
-showlatex-denomexp-p : {A B : Set} {{_ : WholePart A B}} {{_ : ShowLaTeX B}} {{_ : DenomExp A}} -> ℕ -> A -> String
-showlatex-denomexp-p {A} {B} d a with denomexp-decompose {A} {B} a
+showlatex-denomexpBy-p : {A B : Set} (Base : Set) -> String -> {{_ : WholePart A B}} {{_ : ShowLaTeX B}} {{_ : DenomExp Base A}} -> ℕ -> A -> String
+showlatex-denomexpBy-p {A} {B} Base base d a with denomexp-decomposeBy {A} {B} Base a
 ... | b , zero = showlatex-p d b
-... | b , suc zero = showParen d 7 ("\\frac{1}{\\sqrt{2}}" ++ showlatex-p 7 b)
-... | b , k = showParen d 7 ("\\frac{1}{\\sqrt{2}^{" ++ show k ++ "}}" ++ showlatex-p 7 b)
+... | b , suc zero = showParen d 7 ("\\frac{1}{" ++ base ++ "}" ++ showlatex-p 7 b)
+... | b , k = showParen d 7 ("\\frac{1}{" ++ base ++ "^{" ++ show k ++ "}}" ++ showlatex-p 7 b)
+
+showlatex-denomexp-p : {A B : Set} {{_ : WholePart A B}} {{_ : ShowLaTeX B}} {{_ : DenomExp SqrtTwoBase A}} -> ℕ -> A -> String
+showlatex-denomexp-p = showlatex-denomexpBy-p SqrtTwoBase "\\sqrt{2}"
 
 -- The LaTeX representation of a matrix, given the representation of
 -- the entries.

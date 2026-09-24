@@ -76,6 +76,68 @@ enough) or coinduction; functions that call `error` in Haskell return
 a `Maybe` or a documented default. Deviations from Haskell are listed
 at the top of each module.
 
+## Denominator bases
+
+`Quantum.Synthesis.Ring.DenomExp Base A` computes a least denominator
+exponent and multiplies by a power of the selected base. The tag `Base`
+allows several denominator conventions on the same carrier:
+
+```agda
+denomexpBy SqrtTwoBase (DRootTwo ∋ ½)  -- 2
+denomexpBy TwoBase     (DRootTwo ∋ ½)  -- 1
+denomexp-factorBy TwoBase (Dyadic ∋ ½) 3  -- 4
+denomexp-decomposeBy {Dyadic} {ℤ} TwoBase (dyadic 1 3)  -- (1 , 3)
+```
+
+The existing `denomexp`, `denomexp-factor`, `denomexp-decompose` and
+default printing retain the √2 convention. Explicit class constraints
+now take a base parameter, e.g. `DenomExp SqrtTwoBase DOmega`.
+Base-2 instances are supplied for `Dyadic`, `DRootTwo` and `DOmega`.
+`OnePlusIBase` selects 1+i on `DComplex`, `DRComplex` and `DOmega`;
+`OnePlusOmegaBase` selects 1+ω on `DOmega`. For example:
+
+```agda
+denomexpBy OnePlusIBase     (DComplex ∋ ½)  -- 2
+denomexpBy OnePlusOmegaBase (DOmega   ∋ ½)  -- 4
+```
+
+These instances multiply by the actual complex base, including its phase.
+For 1+i on dyadic Gaussian numbers, clearing powers of 2 followed by a
+Gaussian parity check gives the least exponent. `DRComplex` applies that
+calculation separately to the coefficients of 1 and √2. On `DOmega`,
+1+i = ω√2 has the same exponent as √2 because ω is an integral unit.
+For δ = 1+ω, δ² = √2·ω(1+√2), and ω(1+√2) is an integral unit.
+If the least √2 exponent is k, the δ exponent is 2k or 2k−1: the latter
+applies when the cleared numerator's coefficient sum is even. Integral
+inputs have exponent zero.
+
+The distinguished whole ring matters: `DRComplex` uses ℤ[√2,i], whereas
+`DOmega` uses ℤ[ω]. Thus ω has 1+i exponent 1 in the former and 0 in the
+latter. The 1+ω instance is supplied on `DOmega`, whose whole ring contains
+that base. `Test.Ring` checks the unit identities and compares the new
+exponents against independent multiplication and integrality checks,
+including every smaller exponent on finite coefficient samples.
+
+Pairs, lists, vectors and matrices preserve the selected base, take the
+maximum entry exponent (zero when empty), and scale every entry.
+The complex lift applies a coefficient-ring base to both coordinates;
+the 1+i instances above instead mix coordinates explicitly.
+To avoid overlapping instance search, `DenomExpCplx` is a reusable builder,
+with automatic instances registered for `SqrtTwoBase` and `TwoBase`.
+Clients adding another coefficient-ring base can register that builder
+as an instance for their specific tag.
+
+To add a base, declare a tag type and an instance defining the two
+`DenomExp` fields. No central enumeration needs changing. `Test.Ring`
+defines a base-4 instance and `Test.Matrix` checks that it lifts through
+vectors and matrices. As before, this operational interface has no law
+fields: instance authors must justify minimality and denominator clearing
+relative to the chosen `WholePart` instance.
+
+For explicit-base rendering, `showsPrec-DenomExpBy` takes an inverse-base
+expression (e.g. `"half"`), and `showlatex-denomexpBy-p` takes a base
+expression (e.g. `"2"`). Parenthesize compound expressions as needed.
+
 ## Overloading
 
 Operators are overloaded with instance arguments, e.g. `_+_ : {{SemiRing A}} → A → A → A`.
