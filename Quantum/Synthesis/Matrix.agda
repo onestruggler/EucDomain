@@ -34,7 +34,7 @@
 --
 -- * Haskell has overlapping Show instances for matrices over DRootTwo,
 --   DRComplex and DOmega (which pull out a common denominator
---   exponent). Since Agda does not support overlapping instances, we
+--   exponent). Instead of an overlapping generic instance, we
 --   give a Show instance for matrices over each particular entry type
 --   (ℤ, ℚ, Float, Z2, Dyadic, ZRootTwo, QRootTwo, ..., DOmega), built
 --   from the generic helper showsPrec-Matrix and showsPrec-DenomExp.
@@ -243,9 +243,9 @@ instance
   WholePartVector .from-whole = vector-map from-whole
   WholePartVector .to-whole = vector-map to-whole
 
-  DenomExpVector : {n : ℕ} {A : Set} {{_ : DenomExp A}} -> DenomExp (Vector n A)
-  DenomExpVector .denomexp as = denomexp (list-of-vector as)
-  DenomExpVector .denomexp-factor as k = vector-map (λ a -> denomexp-factor a k) as
+  DenomExpVector : {δ : ZOmega} {n : ℕ} {A : Set} {{_ : DenomExp[ δ ] A}} -> DenomExp[ δ ] (Vector n A)
+  DenomExpVector {δ} .denomexp-of as = denomexp[ δ ] (list-of-vector as)
+  DenomExpVector {δ} .denomexp-factor-of as k = vector-map (λ a -> denomexp-factor[ δ ] a k) as
 
 -- ----------------------------------------------------------------------
 -- * Matrices
@@ -396,9 +396,9 @@ instance
   WholePartMatrix .from-whole (Matrix' a) = Matrix' (from-whole a)
   WholePartMatrix .to-whole (Matrix' a) = Matrix' (to-whole a)
 
-  DenomExpMatrix : {m n : ℕ} {A : Set} {{_ : DenomExp A}} -> DenomExp (Matrix m n A)
-  DenomExpMatrix .denomexp (Matrix' a) = denomexp a
-  DenomExpMatrix .denomexp-factor (Matrix' a) k = Matrix' (denomexp-factor a k)
+  DenomExpMatrix : {δ : ZOmega} {m n : ℕ} {A : Set} {{_ : DenomExp[ δ ] A}} -> DenomExp[ δ ] (Matrix m n A)
+  DenomExpMatrix {δ} .denomexp-of (Matrix' a) = denomexp[ δ ] a
+  DenomExpMatrix {δ} .denomexp-factor-of (Matrix' a) k = Matrix' (denomexp-factor[ δ ] a k)
 
 -- The ring of square matrices.
 module _ {A : Set} {{_ : Ring A}} {n : ℕ} where

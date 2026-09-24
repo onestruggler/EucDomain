@@ -116,6 +116,45 @@ Some design points (see the comments in `Typeclasses` and `Literals`):
 - The name `i` clashes with the notation `a + b i`; modules using that
   notation hide `i`.
 
+## Denominator exponents
+
+newsynth's class `DenomExp` factors out the least power of 1/√2 from
+an element of 𝔻[√2], 𝔻[ω], ... (e.g. `denomexp`, `denomexp-decompose`).
+Here the class is generalized to other bases: `DenomExp[ δ ] A` for a
+base δ ∈ ℤ[ω], written as an ordinary expression, and `DenomExp` is
+`DenomExp[ √2 ]`, so the newsynth class name and functions (`denomexp`,
+`denomexp-factor`, `denomexp-decompose`, `showsPrec-DenomExp`) are
+unchanged. There are instances for the divisors of 2:
+
+| ring | bases |
+|---|---|
+| 𝔻 | 2 |
+| 𝔻[√2] | √2, 2 |
+| 𝔻[i] | 1 + i, 2 |
+| 𝔻[√2,i] | √2, 2, 1 + i |
+| 𝔻[ω] | √2, 1 + i, 1 + ω, 2 |
+
+and for pairs, lists, vectors and matrices of these, for every base.
+
+```agda
+open import Data.Product.Base using (_,_)
+
+_ : denomexp[ 1 + ω ] (DOmega ∋ ½) ≡ 4
+_ = refl
+_ : denomexp-decompose[ 1 + i ] (DComplex ∋ ½) ≡ (i , 2)
+_ = refl
+_ : showsPrec-DenomExp[ 2 ] {DOmega} {ZOmega} 0 (√½ ^ 3 * (1 + ω)) ≡ "half^2 * Omega (-1) 1 1 1"
+_ = refl
+```
+
+Instances for further bases can be written by hand, or built with
+`denomexp-by-search` (see `Test/DenomExp.agda` for a base 1 - i).
+Unlike in newsynth, the fields of the class are named `denomexp-of`
+and `denomexp-factor-of`, so an instance is defined as
+`X .denomexp-of a = ...` (its type can still be written `DenomExp X`).
+Asking for a base that has no instance is a type error; for 𝔻, which
+has a single instance, it reads like `0 !=< 1 of type ℕ`.
+
 ## Testing
 
 `Test/*.agda` contain checks by evaluation (`refl`); `Test/*Run.agda`

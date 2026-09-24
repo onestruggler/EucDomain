@@ -73,6 +73,7 @@ import Test.Clifford
 import Test.CliffordT
 import Test.CliffordTRun
 import Test.CliffordTRun2
+import Test.DenomExp
 import Test.Diophantine
 import Test.DiophantineRun
 import Test.EuclideanDomain

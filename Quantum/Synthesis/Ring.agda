@@ -16,12 +16,18 @@
 -- underscores are renamed with dashes, e.g. from_whole ↦ from-whole.
 -- Haskell functions that call "error" on bad inputs either return a
 -- Maybe, or are total with a documented default value.
+--
+-- The class DenomExp (least denominator exponents with respect to √2)
+-- is generalized to DenomExp[ δ ] for other bases δ, such as 2, 1 + i
+-- and 1 + ω; see "Common denominators" below. Its fields are named
+-- denomexp-of and denomexp-factor-of, while denomexp and
+-- denomexp-factor are functions.
 
 {-# OPTIONS --without-K --safe #-}
 
 module Quantum.Synthesis.Ring where
 
-open import Data.Bool.Base using (Bool ; true ; false ; not ; _∧_ ; _∨_ ; if_then_else_ ; T)
+open import Data.Bool.Base using (Bool ; true ; false ; not ; _∧_ ; _∨_ ; _xor_ ; if_then_else_ ; T)
 open import Data.List.Base using (List ; [] ; _∷_ ; map ; foldr)
 open import Data.Maybe.Base using (Maybe ; just ; nothing ; _>>=_)
 open import Data.Nat.Base as Nat using (ℕ ; zero ; suc)
@@ -941,41 +947,145 @@ instance
 -- ----------------------------------------------------------------------
 -- * Common denominators
 
--- A type class for things from which a common power of 1/√2 (a least
--- denominator exponent) can be factored out. Typical instances are
--- DRootTwo, DRComplex, as well as tuples, lists, vectors, and
--- matrices thereof.
-record DenomExp (A : Set) : Set where
+-- A type class for things from which a common power of 1/δ (a least
+-- denominator exponent with respect to the base δ) can be factored
+-- out. The base δ is an element of ℤ[ω], written as an ordinary
+-- expression, e.g. DenomExp[ 1 + ω ] DOmega or denomexp[ 2 ] x.
+-- Instance search compares bases up to evaluation, so 1 + ω, ω + 1
+-- and Omega 0 0 1 1 denote the same base. (Associates, such as 1 + i
+-- and 1 - i, are different bases: they give the same exponents, but
+-- different factored forms.)
+--
+-- The bases of interest are the divisors of 2, which is ramified in
+-- ℤ[ω]: 2 = √2² = -i(1 + i)², and as ideals (√2) = (1 + i) = (1 + ω)²
+-- and (2) = (1 + ω)⁴. Hence the exponents with respect to these bases
+-- are related: k√2 = k₁₊ᵢ = ⌈k₁₊ω / 2⌉ and k₂ = ⌈k√2 / 2⌉ on 𝔻[ω]. The
+-- instances are
+--
+--   𝔻        base 2
+--   𝔻[√2]    bases √2, 2
+--   𝔻[i]     bases 1 + i, 2
+--   𝔻[√2,i]  bases √2, 2, 1 + i
+--   𝔻[ω]     bases √2, 1 + i, 1 + ω, 2
+--
+-- together with pairs, ⊤, lists, vectors and matrices thereof, for
+-- every base. Here "integral" means an element of the ring of
+-- integers given by WholePart, e.g. ℤ[√2][i] for 𝔻[√2,i] (which is
+-- not integrally closed, unlike ℤ, ℤ[√2], ℤ[i] and ℤ[ω]). Instances
+-- for further bases can be given by a formula, or be built by
+-- denomexp-by-search (see "Common denominators by search" below).
+-- Asking for a base that has no instance is a type error; on 𝔻, which
+-- has only the instance for 2, it shows up as a mismatch of the
+-- coefficients of the bases, e.g. "0 !=< 1 of type ℕ".
+--
+-- The class DenomExp and the functions denomexp, denomexp-factor,
+-- denomexp-decompose and showsPrec-DenomExp of newsynth are the
+-- special case δ = √2 (see "The base √2" below).
+record DenomExp[_] (δ : ZOmega) (A : Set) : Set where
   field
-    -- Calculate the least denominator exponent k of a. Returns the
-    -- smallest k ≥ 0 such that a = b/√2ᵏ for some integral b.
-    denomexp : A -> ℕ
-    -- Factor out a kth power of 1/√2 from a. In other words,
-    -- calculate a√2ᵏ.
-    denomexp-factor : A -> ℕ -> A
-open DenomExp {{...}} public
+    -- Calculate the least denominator exponent k of a with respect
+    -- to δ. Returns the smallest k ≥ 0 such that a = b/δᵏ for some
+    -- integral b.
+    denomexp-of : A -> ℕ
+    -- Factor out a kth power of 1/δ from a. In other words,
+    -- calculate aδᵏ.
+    denomexp-factor-of : A -> ℕ -> A
+-- The fields take the instance as an explicit argument: they are
+-- meant for defining instances, e.g. X .denomexp-of a = ... (the base
+-- could not be inferred in general, since a type can have instances
+-- for several bases).
+open DenomExp[_] public
 
--- Calculate and factor out the least denominator exponent k of a.
--- Return (b,k), where a = b/(√2)ᵏ and k ≥ 0.
-denomexp-decompose : {A B : Set} {{_ : WholePart A B}} {{_ : DenomExp A}} -> A -> B × ℕ
-denomexp-decompose a = to-whole (denomexp-factor a k) , k
-  where k = denomexp a
+-- The functions of the class, with the base as an explicit argument,
+-- e.g. denomexp[ 1 + ω ] z.
+denomexp[_] : (δ : ZOmega) {A : Set} {{_ : DenomExp[ δ ] A}} -> A -> ℕ
+denomexp[ δ ] {{r}} = DenomExp[_].denomexp-of r
 
--- Generic show-like method that factors out a common denominator
--- exponent.
-showsPrec-DenomExp : {A B : Set} {{_ : WholePart A B}} {{_ : Show B}} {{_ : DenomExp A}} -> ℕ -> A -> String
-showsPrec-DenomExp {A} {B} d a with denomexp-decompose {A} {B} a
+denomexp-factor[_] : (δ : ZOmega) {A : Set} {{_ : DenomExp[ δ ] A}} -> A -> ℕ -> A
+denomexp-factor[ δ ] {{r}} = DenomExp[_].denomexp-factor-of r
+
+-- Calculate and factor out the least denominator exponent k of a
+-- with respect to δ. Return (b,k), where a = b/δᵏ and k ≥ 0.
+-- (k is passed as an argument, so that it is computed only once in
+-- compiled code.)
+denomexp-decompose[_] : (δ : ZOmega) {A B : Set} {{_ : WholePart A B}} {{_ : DenomExp[ δ ] A}} -> A -> B × ℕ
+denomexp-decompose[ δ ] {A} {B} a = with-k (denomexp[ δ ] a)
+  where
+    with-k : ℕ -> B × ℕ
+    with-k k = to-whole (denomexp-factor[ δ ] a k) , k
+
+-- The name of 1/δ used by showsPrec-DenomExp[ δ ]: "roothalf" for √2
+-- (as in newsynth), "half" for 2, "recip (1 + i)",
+-- "recip (1 + omega)", and "recip (Omega a b c d)" for other bases.
+show-recip-base : ZOmega -> String
+show-recip-base δ =
+  if δ == √2 then "roothalf"
+  else if δ == 2 then "half"
+  else if δ == 1 + i then "recip (1 + i)"
+  else if δ == 1 + ω then "recip (1 + omega)"
+  else "recip " ++ showsPrec-Omega 11 δ
+
+-- Generic show-like method that factors out a common power of 1/δ,
+-- where 1/δ is printed as the given string r, which must bind more
+-- tightly than ^ (e.g. an atom such as "roothalf", or an application
+-- such as "recip (1 + i)").
+showsPrec-DenomExp-named : (δ : ZOmega) -> String -> {A B : Set} {{_ : WholePart A B}} {{_ : Show B}} {{_ : DenomExp[ δ ] A}} -> ℕ -> A -> String
+showsPrec-DenomExp-named δ r {A} {B} d a with denomexp-decompose[ δ ] {A} {B} a
 ... | b , zero = showsPrec d b
-... | b , suc zero = showParen d 7 ("roothalf * " ++ showsPrec 7 b)
-... | b , k = showParen d 7 ("roothalf^" ++ show k ++ " * " ++ showsPrec 7 b)
+... | b , suc zero = showParen d 7 (r ++ " * " ++ showsPrec 7 b)
+... | b , k = showParen d 7 (r ++ "^" ++ show k ++ " * " ++ showsPrec 7 b)
 
+-- Generic show-like method that factors out a common power of 1/δ,
+-- e.g. "roothalf^3 * Omega 0 0 1 1" or "recip (1 + omega)^4 * Omega 2 3 2 0".
+showsPrec-DenomExp[_] : (δ : ZOmega) {A B : Set} {{_ : WholePart A B}} {{_ : Show B}} {{_ : DenomExp[ δ ] A}} -> ℕ -> A -> String
+showsPrec-DenomExp[ δ ] {A} {B} = showsPrec-DenomExp-named δ (show-recip-base δ) {A} {B}
+
+-- a2ᵏ, for a dyadic fraction a (without a multiplication).
+dyadic-shift : Dyadic -> ℕ -> Dyadic
+dyadic-shift (Dyadic' a n _) k with k Nat.≤ᵇ n
+... | true = dyadic a (n Nat.∸ k)
+... | false = Dyadic' (shiftL a (k Nat.∸ n)) 0 _
+
+private
+  -- For a = Omega x y z w ∈ 𝔻[ω], return the largest exponent n of
+  -- the coefficients (i.e., the least n with 2ⁿa ∈ ℤ[ω]), and the
+  -- parities of the coefficients of 2ⁿa (true: odd).
+  omega-top : DOmega -> ℕ × Bool × Bool × Bool × Bool
+  omega-top (Omega (Dyadic' a ak _) (Dyadic' b bk _) (Dyadic' c ck _) (Dyadic' d dk _)) =
+    k , odd ak a , odd bk b , odd ck c , odd dk d
+    where
+      k = max (max ak bk) (max ck dk)
+      odd : ℕ -> ℤ -> Bool
+      odd xk x = (k Nat.≡ᵇ xk) ∧ not (evenℤ x)
+
+-- (In denomexp-factor-of, the bases 1 + i and 1 + ω are written as
+-- Cplx 1 1, Omega 0 1 0 1 and Omega 0 0 1 1. Otherwise the compiled
+-- code would inline the additions of the base into each use of the
+-- power.)
 instance
-  DenomExpDRootTwo : DenomExp DRootTwo
-  DenomExpDRootTwo .denomexp (RootTwo (Dyadic' _ k _) (Dyadic' _ l _)) = max (2 * k) (2 * l Nat.∸ 1)
-  DenomExpDRootTwo .denomexp-factor a k = a * roottwo ^ k
+  DenomExpDyadic-2 : DenomExp[ 2 ] Dyadic
+  DenomExpDyadic-2 .denomexp-of (Dyadic' _ k _) = k
+  DenomExpDyadic-2 .denomexp-factor-of = dyadic-shift
 
-  DenomExpDOmega : DenomExp DOmega
-  DenomExpDOmega .denomexp (Omega (Dyadic' a ak _) (Dyadic' b bk _) (Dyadic' c ck _) (Dyadic' d dk _)) =
+  DenomExpDRootTwo : DenomExp[ √2 ] DRootTwo
+  DenomExpDRootTwo .denomexp-of (RootTwo (Dyadic' _ k _) (Dyadic' _ l _)) = max (2 * k) (2 * l Nat.∸ 1)
+  DenomExpDRootTwo .denomexp-factor-of a k = a * roottwo ^ k
+
+  DenomExpDRootTwo-2 : DenomExp[ 2 ] DRootTwo
+  DenomExpDRootTwo-2 .denomexp-of (RootTwo (Dyadic' _ k _) (Dyadic' _ l _)) = max k l
+  DenomExpDRootTwo-2 .denomexp-factor-of (RootTwo x y) k = RootTwo (dyadic-shift x k) (dyadic-shift y k)
+
+  -- Let n > 0 be the largest exponent of the coefficients of a ∈ 𝔻[i].
+  -- Then 2ⁿa = x + yi ∈ ℤ[i] is divisible by 1 + i (exactly once) if
+  -- and only if x and y are both odd, i.e., both exponents are n.
+  DenomExpDComplex-1+i : DenomExp[ 1 + i ] DComplex
+  DenomExpDComplex-1+i .denomexp-of (Cplx (Dyadic' _ k _) (Dyadic' _ l _)) =
+    if n Nat.≡ᵇ 0 then 0 else if k Nat.≡ᵇ l then 2 * n Nat.∸ 1 else 2 * n
+    where n = max k l
+  DenomExpDComplex-1+i .denomexp-factor-of a k = a * Cplx 1 1 ^ k
+
+  DenomExpDOmega : DenomExp[ √2 ] DOmega
+  DenomExpDOmega .denomexp-of (Omega (Dyadic' a ak _) (Dyadic' b bk _) (Dyadic' c ck _) (Dyadic' d dk _)) =
     if (0 <ᵇ k) ∧ evenℤ (a' - c') ∧ evenℤ (b' - d') then 2 * k Nat.∸ 1 else 2 * k
     where
       k = max (max ak bk) (max ck dk)
@@ -983,28 +1093,94 @@ instance
       b' = if k == bk then b else 0
       c' = if k == ck then c else 0
       d' = if k == dk then d else 0
-  DenomExpDOmega .denomexp-factor a k = a * roottwo ^ k
+  DenomExpDOmega .denomexp-factor-of a k = a * roottwo ^ k
 
-  DenomExpPair : {A B : Set} {{_ : DenomExp A}} {{_ : DenomExp B}} -> DenomExp (A × B)
-  DenomExpPair .denomexp (a , b) = max (denomexp a) (denomexp b)
-  DenomExpPair .denomexp-factor (a , b) k = denomexp-factor a k , denomexp-factor b k
+  -- 1 + i = ω√2, and ω is a unit.
+  DenomExpDOmega-1+i : DenomExp[ 1 + i ] DOmega
+  DenomExpDOmega-1+i .denomexp-of = denomexp[ √2 ]
+  DenomExpDOmega-1+i .denomexp-factor-of a k = a * Omega 0 1 0 1 ^ k
 
-  DenomExpUnit : DenomExp ⊤
-  DenomExpUnit .denomexp _ = 0
-  DenomExpUnit .denomexp-factor _ _ = _
+  -- If a = X/2ⁿ with n > 0 and X ∈ ℤ[ω] not divisible by 2, then the
+  -- least exponent is 4n - ν, where ν < 4 is the number of times 1 + ω
+  -- divides X. Modulo 2, with t = 1 + ω, we have aω³ + bω² + cω + d =
+  -- at³ + (a + b)t² + (a + c)t + (a + b + c + d), which gives ν.
+  DenomExpDOmega-1+ω : DenomExp[ 1 + ω ] DOmega
+  DenomExpDOmega-1+ω .denomexp-of x with omega-top x
+  ... | zero , _ = 0
+  ... | n , pa , pb , pc , pd =
+    if pa xor pb xor pc xor pd then 4 * n
+    else if pa xor pc then 4 * n Nat.∸ 1
+    else if pa xor pb then 4 * n Nat.∸ 2
+    else 4 * n Nat.∸ 3
+  DenomExpDOmega-1+ω .denomexp-factor-of a k = a * Omega 0 0 1 1 ^ k
 
-  DenomExpList : {A : Set} {{_ : DenomExp A}} -> DenomExp (List A)
-  DenomExpList .denomexp as = foldr (λ a k -> max (denomexp a) k) 0 as
-  DenomExpList .denomexp-factor as k = map (λ a -> denomexp-factor a k) as
+  DenomExpDOmega-2 : DenomExp[ 2 ] DOmega
+  DenomExpDOmega-2 .denomexp-of x = proj₁ (omega-top x)
+  DenomExpDOmega-2 .denomexp-factor-of (Omega a b c d) k =
+    Omega (dyadic-shift a k) (dyadic-shift b k) (dyadic-shift c k) (dyadic-shift d k)
 
-  DenomExpCplx : {A : Set} {{_ : DenomExp A}} -> DenomExp (A [i])
-  DenomExpCplx .denomexp (Cplx a b) = max (denomexp a) (denomexp b)
-  DenomExpCplx .denomexp-factor (Cplx a b) k = Cplx (denomexp-factor a k) (denomexp-factor b k)
+  DenomExpPair : {δ : ZOmega} {A B : Set} {{_ : DenomExp[ δ ] A}} {{_ : DenomExp[ δ ] B}} -> DenomExp[ δ ] (A × B)
+  DenomExpPair {δ} .denomexp-of (a , b) = max (denomexp[ δ ] a) (denomexp[ δ ] b)
+  DenomExpPair {δ} .denomexp-factor-of (a , b) k = denomexp-factor[ δ ] a k , denomexp-factor[ δ ] b k
+
+  DenomExpUnit : {δ : ZOmega} -> DenomExp[ δ ] ⊤
+  DenomExpUnit .denomexp-of _ = 0
+  DenomExpUnit .denomexp-factor-of _ _ = _
+
+  DenomExpList : {δ : ZOmega} {A : Set} {{_ : DenomExp[ δ ] A}} -> DenomExp[ δ ] (List A)
+  DenomExpList {δ} .denomexp-of as = foldr (λ a k -> max (denomexp[ δ ] a) k) 0 as
+  DenomExpList {δ} .denomexp-factor-of as k = map (λ a -> denomexp-factor[ δ ] a k) as
+
+  -- Componentwise. This is correct for the bases δ that are integral
+  -- elements of A (such as √2 and 2 for 𝔻[√2,i], and 2 for 𝔻[i]); δ is
+  -- taken to be an element of A. The instance is overlapped by the
+  -- instances for bases that are not in A, such as 1 + i for 𝔻[i] and
+  -- 𝔻[√2,i], which instance search then prefers.
+  DenomExpCplx : {δ : ZOmega} {A : Set} {{_ : DenomExp[ δ ] A}} -> DenomExp[ δ ] (A [i])
+  DenomExpCplx {δ} .denomexp-of (Cplx a b) = max (denomexp[ δ ] a) (denomexp[ δ ] b)
+  DenomExpCplx {δ} .denomexp-factor-of (Cplx a b) k = Cplx (denomexp-factor[ δ ] a k) (denomexp-factor[ δ ] b k)
+  {-# OVERLAPPABLE DenomExpCplx #-}
+
+-- ----------------------------------------------------------------------
+-- ** The base √2
+
+-- The class and functions of newsynth, which use the base √2. Unlike
+-- in newsynth, denomexp and denomexp-factor are functions, and not the
+-- fields of the class: an instance of DenomExp A (= DenomExp[ √2 ] A)
+-- is defined by its fields denomexp-of and denomexp-factor-of, e.g.
+-- X .denomexp-of a = ... (or record { denomexp-of = ... ; ... }).
+
+-- A type class for things from which a common power of 1/√2 (a least
+-- denominator exponent) can be factored out. Typical instances are
+-- DRootTwo, DRComplex, DOmega, as well as tuples, lists, vectors, and
+-- matrices thereof.
+DenomExp : Set -> Set
+DenomExp = DenomExp[ √2 ]
+
+-- Calculate the least denominator exponent k of a. Returns the
+-- smallest k ≥ 0 such that a = b/√2ᵏ for some integral b.
+denomexp : {A : Set} {{_ : DenomExp A}} -> A -> ℕ
+denomexp = denomexp[ √2 ]
+
+-- Factor out a kth power of 1/√2 from a. In other words, calculate
+-- a√2ᵏ.
+denomexp-factor : {A : Set} {{_ : DenomExp A}} -> A -> ℕ -> A
+denomexp-factor = denomexp-factor[ √2 ]
+
+-- Calculate and factor out the least denominator exponent k of a.
+-- Return (b,k), where a = b/(√2)ᵏ and k ≥ 0.
+denomexp-decompose : {A B : Set} {{_ : WholePart A B}} {{_ : DenomExp A}} -> A -> B × ℕ
+denomexp-decompose {A} {B} = denomexp-decompose[ √2 ] {A} {B}
+
+-- Generic show-like method that factors out a common denominator
+-- exponent, e.g. "roothalf^3 * Omega 0 0 1 1".
+showsPrec-DenomExp : {A B : Set} {{_ : WholePart A B}} {{_ : Show B}} {{_ : DenomExp A}} -> ℕ -> A -> String
+showsPrec-DenomExp {A} {B} = showsPrec-DenomExp-named √2 "roothalf" {A} {B}
 
 -- ----------------------------------------------------------------------
 -- Show instances for the particular rings. Elements of 𝔻[ω] and
 -- 𝔻[√2,i] are shown by pulling out a common denominator exponent,
--- e.g. "roothalf^3 * Omega 1 0 1 0".
+-- e.g. "roothalf^3 * Omega 0 0 1 1".
 
 instance
   ShowZComplex : Show ZComplex
@@ -1067,6 +1243,50 @@ instance
   ToQOmegaOmega : {A : Set} {{_ : ToQOmega A}} -> ToQOmega (A [ω])
   ToQOmegaOmega .toQOmega (Omega a b c d) =
     ω ^ 3 * toQOmega a + ω ^ 2 * toQOmega b + ω * toQOmega c + toQOmega d
+
+-- ----------------------------------------------------------------------
+-- * Common denominators by search
+
+-- Build a DenomExp[ δ ] instance by search, for a ring A with ring of
+-- integers B (given by WholePart A B) that has a DenomExp[ 2 ]
+-- instance. The arguments are
+--
+--   e    a number e ≥ 1 such that δᵉ = 2u for a unit u of B, e.g.
+--        e = 2 for δ = 1 ± i, since (1 ± i)² = ±2i, and e = 4 for
+--        δ = 1 + ω;
+--   δA   the base δ as an element of A. It must be equal to δ, and
+--        integral (δA ∈ B).
+--
+-- Then the least denominator exponent k of a with respect to δ
+-- satisfies e(n - 1) < k ≤ en, where n is the one with respect to 2,
+-- and it is found by testing whether aδᵏ is integral, i.e., whether
+-- from-whole (to-whole (aδᵏ)) == aδᵏ, for these k. The conditions on
+-- δA are checked by evaluation where the instance is defined: the
+-- instance arguments T (...) are found if they hold, and reported
+-- missing otherwise. The condition on e is not checked: a wrong e
+-- gives wrong exponents. (δA ∈ B follows from δᵉ = 2u if B is
+-- integrally closed, but not in general: in ℤ[√2][i], (1 + ω)⁴ = 2u
+-- for a unit u, but 1 + ω ∉ ℤ[√2][i].)
+denomexp-by-search : {δ : ZOmega} {A B : Set} {{_ : Ring A}} {{_ : DecEq A}} {{_ : WholePart A B}}
+  {{_ : DenomExp[ 2 ] A}} {{_ : ToQOmega A}} -> (e : ℕ) -> (δA : A)
+  -> .{{_ : T (toQOmega δA == toQOmega δ)}} -> .{{_ : T (from-whole {A} {B} (to-whole δA) == δA)}} -> DenomExp[ δ ] A
+denomexp-by-search {δ} {A} {B} e δA = record { denomexp-of = dexp ; denomexp-factor-of = λ a k -> a * δA ^ k }
+  where
+    integral : A -> Bool
+    integral x = from-whole {A} {B} (to-whole x) == x
+    -- The first argument is fuel.
+    search : ℕ -> ℕ -> A -> ℕ
+    search zero k _ = k
+    search (suc f) k x = if integral x then k else search f (suc k) (x * δA)
+    dexp : A -> ℕ
+    dexp a with denomexp[ 2 ] a
+    ... | zero = zero
+    ... | suc n = search (e Nat.∸ 1) (e * n + 1) (a * δA ^ (e * n + 1))
+
+instance
+  -- ℤ[√2][i] is not integrally closed, but (1 + i)² = 2i in it.
+  DenomExpDRComplex-1+i : DenomExp[ 1 + i ] DRComplex
+  DenomExpDRComplex-1+i = denomexp-by-search 2 (1 + i)
 
 -- ----------------------------------------------------------------------
 -- * Parity

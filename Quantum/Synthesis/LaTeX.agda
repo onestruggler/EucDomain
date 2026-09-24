@@ -15,13 +15,12 @@
 --
 -- * Haskell has an instance ShowLaTeX (Matrix n m a) for all a, which
 --   is overlapped by the instances for matrices over DOmega and
---   DRComplex (these pull out a common denominator exponent). Agda
---   does not support overlapping instances, so there are instances for
---   matrices over each particular entry type (ℤ, ℚ, Dyadic, Float,
---   SymReal, ZOmega, Z2 [ω], ZRootTwo, DRootTwo, QRootTwo, ZComplex,
---   DComplex, QComplex, CDouble, ZRootTwo [i], QRComplex, TwoLevel,
---   DOmega, DRComplex). For other entry types, use the generic
---   function showlatex-Matrix.
+--   DRComplex (these pull out a common denominator exponent). Instead,
+--   there are instances for matrices over each particular entry type
+--   (ℤ, ℚ, Dyadic, Float, SymReal, ZOmega, Z2 [ω], ZRootTwo, DRootTwo,
+--   QRootTwo, ZComplex, DComplex, QComplex, CDouble, ZRootTwo [i],
+--   QRComplex, TwoLevel, DOmega, DRComplex). For other entry types, use
+--   the generic function showlatex-Matrix.
 --
 -- * The instances for A [√2] and A [i] require DecOrd A instead of
 --   Haskell's (Eq a, Num a): the comparisons with 0, 1, -1 in the
@@ -233,14 +232,6 @@ private
   _≃_ : {A : Set} {{_ : DecOrd A}} -> A -> A -> Bool
   x ≃ y = (x ≤ᵇ y) ∧ (y ≤ᵇ x)
 
--- Generic showlatex-like method that factors out a common denominator
--- exponent.
-showlatex-denomexp-p : {A B : Set} {{_ : WholePart A B}} {{_ : ShowLaTeX B}} {{_ : DenomExp A}} -> ℕ -> A -> String
-showlatex-denomexp-p {A} {B} d a with denomexp-decompose {A} {B} a
-... | b , zero = showlatex-p d b
-... | b , suc zero = showParen d 7 ("\\frac{1}{\\sqrt{2}}" ++ showlatex-p 7 b)
-... | b , k = showParen d 7 ("\\frac{1}{\\sqrt{2}^{" ++ show k ++ "}}" ++ showlatex-p 7 b)
-
 -- The LaTeX representation of a matrix, given the representation of
 -- the entries.
 showlatex-Matrix : {m n : ℕ} {A : Set} -> (A -> String) -> Matrix m n A -> String
@@ -299,6 +290,30 @@ showlatex-p-ZOmega prec (Omega a b c d) = showParen prec 6 (format-signed-list l
     list2 : List (ℤ × String)
     list2 = List.filterᵇ (λ p -> proj₁ p /= 0)
       (List.map signedunit ((a , just "\\omega^3") ∷ (b , just "\\omega^2") ∷ (c , just "\\omega") ∷ (d , nothing) ∷ []))
+
+-- The LaTeX form of a base δ of DenomExp[ δ ], at the given
+-- precedence (0 in \frac{1}{δ}, 8 in \frac{1}{δ^{k}}): \sqrt{2}, 2,
+-- 1+i, 1+\omega, and the form of showlatex-p-ZOmega for other bases.
+showlatex-base : ℕ -> ZOmega -> String
+showlatex-base p δ =
+  if δ == √2 then "\\sqrt{2}"
+  else if δ == 2 then "2"
+  else if δ == 1 + i then showParen p 6 "1+i"
+  else if δ == 1 + ω then showParen p 6 "1+\\omega"
+  else showlatex-p-ZOmega p δ
+
+-- Generic showlatex-like method that factors out a common power of
+-- 1/δ, e.g. "\frac{1}{(1+\omega)^{4}}(2\omega^3+3\omega^2+2\omega)".
+showlatex-denomexp-p[_] : (δ : ZOmega) {A B : Set} {{_ : WholePart A B}} {{_ : ShowLaTeX B}} {{_ : DenomExp[ δ ] A}} -> ℕ -> A -> String
+showlatex-denomexp-p[ δ ] {A} {B} d a with denomexp-decompose[ δ ] {A} {B} a
+... | b , zero = showlatex-p d b
+... | b , suc zero = showParen d 7 ("\\frac{1}{" ++ showlatex-base 0 δ ++ "}" ++ showlatex-p 7 b)
+... | b , k = showParen d 7 ("\\frac{1}{" ++ showlatex-base 8 δ ++ "^{" ++ show k ++ "}}" ++ showlatex-p 7 b)
+
+-- Generic showlatex-like method that factors out a common denominator
+-- exponent (with respect to √2).
+showlatex-denomexp-p : {A B : Set} {{_ : WholePart A B}} {{_ : ShowLaTeX B}} {{_ : DenomExp A}} -> ℕ -> A -> String
+showlatex-denomexp-p {A} {B} = showlatex-denomexp-p[ √2 ] {A} {B}
 
 showlatex-ℚ : ℚ -> String
 showlatex-ℚ r = "\\frac{" ++ show (Rat.↥ r) ++ "}{" ++ show (Rat.↧ r) ++ "}"
