@@ -148,7 +148,9 @@ _ = refl
 ```
 
 Instances for further bases can be written by hand, or built with
-`denomexp-by-search` (see `Test/DenomExp.agda` for a base 1 - i).
+`denomexp-by-search` (see `Test/DenomExp.agda` for a base 1 - i); the
+latter is fine in compiled code, but slow to evaluate in the type
+checker (e.g. in `refl` proofs), especially on 𝔻[ω].
 Unlike in newsynth, the fields of the class are named `denomexp-of`
 and `denomexp-factor-of`, so an instance is defined as
 `X .denomexp-of a = ...` (its type can still be written `DenomExp X`).

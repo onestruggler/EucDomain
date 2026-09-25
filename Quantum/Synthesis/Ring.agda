@@ -1266,7 +1266,10 @@ instance
 -- missing otherwise. The condition on e is not checked: a wrong e
 -- gives wrong exponents. (δA ∈ B follows from δᵉ = 2u if B is
 -- integrally closed, but not in general: in ℤ[√2][i], (1 + ω)⁴ = 2u
--- for a unit u, but 1 + ω ∉ ℤ[√2][i].)
+-- for a unit u, but 1 + ω ∉ ℤ[√2][i].) Evaluating such an instance
+-- during type checking (e.g. in a refl proof) is slow, and on 𝔻[ω]
+-- can exhaust memory already for a single element; compiled code is
+-- fast. The instances given by formulas do not have this problem.
 denomexp-by-search : {δ : ZOmega} {A B : Set} {{_ : Ring A}} {{_ : DecEq A}} {{_ : WholePart A B}}
   {{_ : DenomExp[ 2 ] A}} {{_ : ToQOmega A}} -> (e : ℕ) -> (δA : A)
   -> .{{_ : T (toQOmega δA == toQOmega δ)}} -> .{{_ : T (from-whole {A} {B} (to-whole δA) == δA)}} -> DenomExp[ δ ] A
