@@ -19,8 +19,16 @@
 -- induction needs and that cannot be proved outside that module
 -- (Lemma-IV-1-I).
 --
--- Split off from Kopt.OptInduction so that each module stays inside
--- the twenty minute limit of agda-check.sh.
+-- Performance. Everything here is assembled from the cancellation
+-- lemmas of the first section, whose statements contain nothing but
+-- matrix *variables*; the only places where a concrete 4×4 matrix over
+-- 𝔻[i] appears are the three closed facts i·K₁·K₁ = 1, K₁·K₁·i = 1 and
+-- lde(K₁) = 1. Writing the same proofs inline, with ⟦K₁⟧g and
+-- gp-mat i-gp substituted into every step, makes the conversion checker
+-- normalise those matrices against a symbolic one over and over (the
+-- record Matrix has eta, so a variable is expanded too) and pushes the
+-- module past the twenty minute limit of agda-check.sh. This module is
+-- also split off from Kopt.OptInduction for the same reason.
 
 {-# OPTIONS --without-K --safe #-}
 
@@ -34,7 +42,6 @@ open import Data.Nat.Base as Nat using (ℕ ; zero ; suc ; z≤n ; s≤s ; _∸_
 import Data.Nat.Properties as NatP
 open import Data.Product.Base using (_×_ ; _,_ ; Σ ; Σ-syntax ; proj₁ ; proj₂)
 open import Data.Sum.Base using (_⊎_ ; inj₁ ; inj₂)
-open import Relation.Binary.Definitions using (Tri ; tri< ; tri≈ ; tri>)
 open import Relation.Binary.PropositionalEquality
   using (_≡_ ; _≢_ ; refl ; sym ; trans ; cong ; cong₂ ; subst ; module ≡-Reasoning)
 open import Relation.Nullary using (¬_ ; yes ; no)
@@ -45,7 +52,6 @@ open import Quantum.Synthesis.Matrix
 open import Kopt.Base
 open import Kopt.Gates
 open import Kopt.Patterns using (SixCases ; I ; II ; III ; IV ; IVt ; V ; VI ; patof ; DecEqSixCases)
-open import Kopt.Synth using (prkc)
 open import Kopt.Descent
 open import Kopt.Optimality
 
@@ -58,77 +64,113 @@ false-true ()
 just-inj : {A : Set} {x y : A} -> _≡_ {A = Maybe A} (just x) (just y) -> x ≡ y
 just-inj refl = refl
 
--- Case analysis on a boolean test that guards an if.
-if-true : (b : Bool) {x y : Bool} -> (if b then x else y) ≡ true ->
+-- Case analysis on a boolean test that guards an if. The two branches
+-- are explicit arguments: an "if" on a neutral scrutinee is a blocked
+-- term, which the unifier does not decompose, so they cannot be
+-- inferred from the hypothesis.
+if-true : (b x y : Bool) -> (if b then x else y) ≡ true ->
           ((b ≡ true) × (x ≡ true)) ⊎ ((b ≡ false) × (y ≡ true))
-if-true true e = inj₁ (refl , e)
-if-true false e = inj₂ (refl , e)
+if-true true x y e = inj₁ (refl , e)
+if-true false x y e = inj₂ (refl , e)
+
+-- ----------------------------------------------------------------------
+-- * Cancellation, for matrix variables only
+--
+-- These are the only places where the associativity and unit laws of
+-- Kopt.Descent are used. Every statement here is about variables, so
+-- the conversion checker never looks inside a matrix.
+
+module _ where
+
+  cancel-left : (X Y A : Op) -> X * Y ≡ 1# -> X * (Y * A) ≡ A
+  cancel-left X Y A h =
+    trans (sym (mat-*-assoc X Y A))
+          (trans (cong (λ m -> m * A) h) (mat-*-identityˡ A))
+
+  cancel-right : (X Y A : Op) -> X * Y ≡ 1# -> (A * X) * Y ≡ A
+  cancel-right X Y A h =
+    trans (mat-*-assoc A X Y)
+          (trans (cong (λ m -> A * m) h) (mat-*-identityʳ A))
+
+  cancel-left3 : (X Y Z A : Op) -> X * (Y * Z) ≡ 1# -> X * (Y * (Z * A)) ≡ A
+  cancel-left3 X Y Z A h =
+    trans (cong (λ m -> X * m) (sym (mat-*-assoc Y Z A)))
+    (trans (sym (mat-*-assoc X (Y * Z) A))
+    (trans (cong (λ m -> m * A) h) (mat-*-identityˡ A)))
+
+  cancel-right3 : (X Y Z A : Op) -> (X * Y) * Z ≡ 1# -> ((A * X) * Y) * Z ≡ A
+  cancel-right3 X Y Z A h =
+    trans (cong (λ m -> m * Z) (mat-*-assoc A X Y))
+    (trans (mat-*-assoc A (X * Y) Z)
+    (trans (cong (λ m -> A * m) h) (mat-*-identityʳ A)))
+
+  -- Lemma II.8 with the lde of the left (resp. right) factor named.
+  lde-mul-up : (M A : Op) (k : ℕ) -> lde M ≡ k -> lde (M * A) Nat.≤ k Nat.+ lde A
+  lde-mul-up M A k h = subst (λ n -> lde (M * A) Nat.≤ n Nat.+ lde A) h (lde-*-≤ M A)
+
+  lde-mul-up-r : (A M : Op) (k : ℕ) -> lde M ≡ k -> lde (A * M) Nat.≤ lde A Nat.+ k
+  lde-mul-up-r A M k h = subst (λ n -> lde (A * M) Nat.≤ lde A Nat.+ n) h (lde-*-≤ A M)
+
+  -- Remark II.10, the direction that needs the inverse: if a
+  -- generalized permutation and a factor M of lde k undo the passage
+  -- from B to A, then lde A ≤ k + lde B.
+  lde-undo-left : (G : GP) (M A B : Op) (k : ℕ) ->
+                  gp-mat G * (M * B) ≡ A -> lde M ≡ k -> lde A Nat.≤ k Nat.+ lde B
+  lde-undo-left G M A B k e hM =
+    subst (λ z -> lde z Nat.≤ k Nat.+ lde B) e
+          (subst (λ n -> n Nat.≤ k Nat.+ lde B) (sym (lde-gp-left G (M * B)))
+                 (lde-mul-up M B k hM))
+
+  lde-undo-right : (G : GP) (M A B : Op) (k : ℕ) ->
+                   (B * M) * gp-mat G ≡ A -> lde M ≡ k -> lde A Nat.≤ lde B Nat.+ k
+  lde-undo-right G M A B k e hM =
+    subst (λ z -> lde z Nat.≤ lde B Nat.+ k) e
+          (subst (λ n -> n Nat.≤ lde B Nat.+ k) (sym (lde-gp-right (B * M) G))
+                 (lde-mul-up-r B M k hM))
 
 -- ----------------------------------------------------------------------
 -- * Remark II.10 for a single K gate
 --
--- K₁·K₁ = -i, so K₁⁻¹ = i·K₁ and a K gate can be undone by another K
--- gate and a generalized permutation. Together with lde(K₁) = 1 and
--- the subadditivity of the lde (Lemma II.8) this gives both halves of
+-- K₁·K₁ = -i, so K₁⁻¹ = i·K₁: a K gate can be undone by another K gate
+-- and a generalized permutation. Together with lde(K₁) = 1 and the
+-- subadditivity of the lde (Lemma II.8) this gives both halves of
 -- Remark II.10: one K gate changes the lde by at most one.
 
 i-gp minus-i-gp : GP
 i-gp = gperm id4p (ph1 , ph1 , ph1 , ph1) refl
 minus-i-gp = gperm id4p (ph3 , ph3 , ph3 , ph3) refl
 
+-- The three closed facts about concrete matrices.
 private
-  k1k1 : ⟦ K₁ ⟧g * ⟦ K₁ ⟧g ≡ gp-mat minus-i-gp
-  k1k1 = ==⇒≡ refl
+  i-k1-k1 : gp-mat i-gp * (⟦ K₁ ⟧g * ⟦ K₁ ⟧g) ≡ 1#
+  i-k1-k1 = ==⇒≡ refl
 
-  -- i·(-i) = 1 and (-i)·i = 1, through the group law of the
-  -- generalized permutations rather than by multiplying the matrices.
-  i·-i : gp-mat i-gp * gp-mat minus-i-gp ≡ 1#
-  i·-i = trans (gp-mat-comp i-gp minus-i-gp) gp-one-mat
-
-  -i·i : gp-mat minus-i-gp * gp-mat i-gp ≡ 1#
-  -i·i = trans (gp-mat-comp minus-i-gp i-gp) gp-one-mat
+  k1-k1-i : (⟦ K₁ ⟧g * ⟦ K₁ ⟧g) * gp-mat i-gp ≡ 1#
+  k1-k1-i = ==⇒≡ refl
 
   lde-K₁ : lde ⟦ K₁ ⟧g ≡ 1
   lde-K₁ = refl
 
 -- Undoing a K gate, on the left and on the right.
 K-undo-left : (A : Op) -> gp-mat i-gp * (⟦ K₁ ⟧g * (⟦ K₁ ⟧g * A)) ≡ A
-K-undo-left A =
-  trans (cong (λ m -> gp-mat i-gp * m) (sym (mat-*-assoc ⟦ K₁ ⟧g ⟦ K₁ ⟧g A)))
-  (trans (cong (λ m -> gp-mat i-gp * (m * A)) k1k1)
-  (trans (sym (mat-*-assoc (gp-mat i-gp) (gp-mat minus-i-gp) A))
-  (trans (cong (λ m -> m * A) i·-i) (mat-*-identityˡ A))))
+K-undo-left A = cancel-left3 (gp-mat i-gp) ⟦ K₁ ⟧g ⟦ K₁ ⟧g A i-k1-k1
 
 K-undo-right : (A : Op) -> ((A * ⟦ K₁ ⟧g) * ⟦ K₁ ⟧g) * gp-mat i-gp ≡ A
-K-undo-right A =
-  trans (cong (λ m -> m * gp-mat i-gp) (mat-*-assoc A ⟦ K₁ ⟧g ⟦ K₁ ⟧g))
-  (trans (cong (λ m -> (A * m) * gp-mat i-gp) k1k1)
-  (trans (mat-*-assoc A (gp-mat minus-i-gp) (gp-mat i-gp))
-  (trans (cong (λ m -> A * m) -i·i) (mat-*-identityʳ A))))
+K-undo-right A = cancel-right3 ⟦ K₁ ⟧g ⟦ K₁ ⟧g (gp-mat i-gp) A k1-k1-i
 
 lde-K-up : (A : Op) -> lde (⟦ K₁ ⟧g * A) Nat.≤ suc (lde A)
-lde-K-up A = subst (λ n -> lde (⟦ K₁ ⟧g * A) Nat.≤ n Nat.+ lde A) lde-K₁ (lde-*-≤ ⟦ K₁ ⟧g A)
+lde-K-up A = lde-mul-up ⟦ K₁ ⟧g A 1 lde-K₁
 
 lde-K-down : (A : Op) -> lde A Nat.≤ suc (lde (⟦ K₁ ⟧g * A))
-lde-K-down A = subst (λ z -> lde z Nat.≤ suc (lde (⟦ K₁ ⟧g * A))) (K-undo-left A) step
-  where
-    step : lde (gp-mat i-gp * (⟦ K₁ ⟧g * (⟦ K₁ ⟧g * A))) Nat.≤ suc (lde (⟦ K₁ ⟧g * A))
-    step = subst (λ n -> n Nat.≤ suc (lde (⟦ K₁ ⟧g * A)))
-                 (sym (lde-gp-left i-gp (⟦ K₁ ⟧g * (⟦ K₁ ⟧g * A))))
-                 (lde-K-up (⟦ K₁ ⟧g * A))
+lde-K-down A = lde-undo-left i-gp ⟦ K₁ ⟧g A (⟦ K₁ ⟧g * A) 1 (K-undo-left A) lde-K₁
 
 lde-K-up-r : (A : Op) -> lde (A * ⟦ K₁ ⟧g) Nat.≤ suc (lde A)
-lde-K-up-r A =
-  subst (λ n -> lde (A * ⟦ K₁ ⟧g) Nat.≤ n) (NatP.+-comm (lde A) 1)
-        (subst (λ n -> lde (A * ⟦ K₁ ⟧g) Nat.≤ lde A Nat.+ n) lde-K₁ (lde-*-≤ A ⟦ K₁ ⟧g))
+lde-K-up-r A = subst (λ n -> lde (A * ⟦ K₁ ⟧g) Nat.≤ n) (NatP.+-comm (lde A) 1)
+                     (lde-mul-up-r A ⟦ K₁ ⟧g 1 lde-K₁)
 
 lde-K-down-r : (A : Op) -> lde A Nat.≤ suc (lde (A * ⟦ K₁ ⟧g))
-lde-K-down-r A = subst (λ z -> lde z Nat.≤ suc (lde (A * ⟦ K₁ ⟧g))) (K-undo-right A) step
-  where
-    step : lde (((A * ⟦ K₁ ⟧g) * ⟦ K₁ ⟧g) * gp-mat i-gp) Nat.≤ suc (lde (A * ⟦ K₁ ⟧g))
-    step = subst (λ n -> n Nat.≤ suc (lde (A * ⟦ K₁ ⟧g)))
-                 (sym (lde-gp-right ((A * ⟦ K₁ ⟧g) * ⟦ K₁ ⟧g) i-gp))
-                 (lde-K-up-r (A * ⟦ K₁ ⟧g))
+lde-K-down-r A = subst (λ n -> lde A Nat.≤ n) (NatP.+-comm (lde (A * ⟦ K₁ ⟧g)) 1)
+                       (lde-undo-right i-gp ⟦ K₁ ⟧g A (A * ⟦ K₁ ⟧g) 1 (K-undo-right A) lde-K₁)
 
 -- ----------------------------------------------------------------------
 -- ** The lde along a list of steps
@@ -161,7 +203,8 @@ lde-run-down [] A = NatP.≤-refl
 lde-run-down (s ∷ ss) A =
   NatP.≤-trans (NatP.≤-trans (lde-step-down s A)
                              (NatP.+-monoʳ-≤ (step-kc s) (lde-run-down ss (step-of s A))))
-               (NatP.≤-reflexive (sym (NatP.+-assoc (step-kc s) (steps-kc ss) (lde (run ss (step-of s A))))))
+               (NatP.≤-reflexive
+                 (sym (NatP.+-assoc (step-kc s) (steps-kc ss) (lde (run ss (step-of s A))))))
 
 -- ----------------------------------------------------------------------
 -- * Descents are invertible
@@ -186,11 +229,9 @@ steps-inv (s ∷ ss) = steps-inv ss ++ step-inv s
 private
   step-inv-run : (s : Step) (A : Op) -> run (step-inv s) (step-of s A) ≡ A
   step-inv-run (gp-left G) A =
-    trans (sym (mat-*-assoc (gp-mat (gp-inverse G)) (gp-mat G) A))
-          (trans (cong (λ m -> m * A) (gp-inverse-left G)) (mat-*-identityˡ A))
+    cancel-left (gp-mat (gp-inverse G)) (gp-mat G) A (gp-inverse-left G)
   step-inv-run (gp-right G) A =
-    trans (mat-*-assoc A (gp-mat G) (gp-mat (gp-inverse G)))
-          (trans (cong (λ m -> A * m) (gp-inverse-right G)) (mat-*-identityʳ A))
+    cancel-right (gp-mat G) (gp-mat (gp-inverse G)) A (gp-inverse-right G)
   step-inv-run K-left A = K-undo-left A
   step-inv-run K-right A = K-undo-right A
 

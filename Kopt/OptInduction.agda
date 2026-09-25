@@ -142,29 +142,36 @@ module LowerBound (v4 : Lemma-V-4) (v6 : Lemma-V-6) (iv1 : Lemma-IV-1-I) where
   -- A K-count-1 step lowers the potential by at most one.
   step-pot : (A : Op) (ss : List Step) -> steps-kc ss ≡ 1 ->
              pot (patof A) (lde A) Nat.≤ suc (pot (patof (run ss A)) (lde (run ss A)))
-  step-pot A ss k1 with NatP.<-cmp (lde (run ss A)) (lde A)
-  -- a 1-descent: Lemma V.4 forces an undashed edge of Figure 1
-  ... | tri< lt _ _ =
-        subst (λ n -> pot (patof A) n Nat.≤ suc (pot (patof (run ss A)) (lde (run ss A))))
-              (sym down)
-              (pot-drop (patof A) (patof (run ss A)) (lde (run ss A))
-                        (rank-drop-of (patof A) (patof (run ss A)) (v4 A ss k1 down)))
+  -- The trichotomy is passed as an argument rather than analysed with
+  -- `with`: a with-clause normalises its scrutinee, and normalising
+  -- lde (run ss A) unfolds a 4×4 matrix of dyadic complex numbers.
+  step-pot A ss k1 = go (NatP.<-cmp (lde (run ss A)) (lde A))
     where
       up : lde A Nat.≤ suc (lde (run ss A))
       up = subst (λ n -> lde A Nat.≤ n Nat.+ lde (run ss A)) k1 (lde-run-down ss A)
-      down : suc (lde (run ss A)) ≡ lde A
-      down = NatP.≤-antisym lt up
-  -- a 0-descent
-  ... | tri≈ _ eq _ = zero-case A ss k1 eq
-  -- a 1-ascent
-  ... | tri> _ _ gt =
-        subst (λ n -> pot (patof A) (lde A) Nat.≤ suc (pot (patof (run ss A)) n))
-              (sym up') (pot-ascent (patof A) (patof (run ss A)) (lde A))
-    where
       down' : lde (run ss A) Nat.≤ suc (lde A)
       down' = subst (λ n -> lde (run ss A) Nat.≤ n Nat.+ lde A) k1 (lde-run-up ss A)
-      up' : lde (run ss A) ≡ suc (lde A)
-      up' = NatP.≤-antisym down' gt
+      go : Tri (lde (run ss A) Nat.< lde A) (lde (run ss A) ≡ lde A)
+               (lde A Nat.< lde (run ss A)) ->
+           pot (patof A) (lde A) Nat.≤ suc (pot (patof (run ss A)) (lde (run ss A)))
+      -- a 1-descent: Lemma V.4 forces an undashed edge of Figure 1
+      go (tri< lt _ _) =
+        subst (λ n -> pot (patof A) n Nat.≤ suc (pot (patof (run ss A)) (lde (run ss A))))
+              down
+              (pot-drop (patof A) (patof (run ss A)) (lde (run ss A))
+                        (rank-drop-of (patof A) (patof (run ss A)) (v4 A ss k1 down)))
+        where
+          down : suc (lde (run ss A)) ≡ lde A
+          down = NatP.≤-antisym lt up
+      -- a 0-descent
+      go (tri≈ _ eq _) = zero-case A ss k1 eq
+      -- a 1-ascent
+      go (tri> _ _ gt) =
+        subst (λ n -> pot (patof A) (lde A) Nat.≤ suc (pot (patof (run ss A)) n))
+              (sym up') (pot-ascent (patof A) (patof (run ss A)) (lde A))
+        where
+          up' : lde (run ss A) ≡ suc (lde A)
+          up' = NatP.≤-antisym down' gt
 
   private
     no-K-lde : (ts : List Step) -> steps-kc ts ≡ 0 -> (A : Op) ->
@@ -229,13 +236,17 @@ module LowerBound (v4 : Lemma-V-4) (v6 : Lemma-V-6) (iv1 : Lemma-IV-1-I) where
 module UpperBound (iv1 : Lemma-IV-1-I) where
 
   private
+    -- Again the case analysis on the lde is done in a helper with the
+    -- number as an argument, so that no `with` normalises lde C.
     rank-le-2l : (C : Op) -> pat-rank (patof C) Nat.≤ 2 Nat.* lde C
-    rank-le-2l C with lde C in e
-    ... | zero = subst (λ p -> pat-rank p Nat.≤ 0) (sym (proj₁ (iv1 C) e)) z≤n
-    ... | suc n = NatP.≤-trans (rank≤2 (patof C)) two≤
+    rank-le-2l C = go (lde C) refl
       where
-        two≤ : 2 Nat.≤ 2 Nat.* suc n
-        two≤ = subst (λ m -> 2 Nat.≤ m) (sym (two*suc n)) (s≤s (s≤s z≤n))
+        go : (n : ℕ) -> lde C ≡ n -> pat-rank (patof C) Nat.≤ 2 Nat.* n
+        go zero e = subst (λ p -> pat-rank p Nat.≤ 0) (sym (proj₁ (iv1 C) e)) z≤n
+        go (suc n) e = NatP.≤-trans (rank≤2 (patof C)) two≤
+          where
+            two≤ : 2 Nat.≤ 2 Nat.* suc n
+            two≤ = subst (λ m -> 2 Nat.≤ m) (sym (two*suc n)) (s≤s (s≤s z≤n))
 
   path-step-pot : (A : Op) (ss : List Step) -> IsPathStep A ss ->
                   steps-kc ss Nat.+ potA (run ss A) Nat.≤ potA A
@@ -245,7 +256,7 @@ module UpperBound (iv1 : Lemma-IV-1-I) where
 
   path-descent-pot : (A : Op) (ss : List Step) -> IsPathDescent A ss ->
                      steps-kc ss Nat.+ potA (run ss A) Nat.≤ potA A
-  path-descent-pot A [] (path-nil .A) = NatP.≤-refl
+  path-descent-pot A _ (path-nil .A) = NatP.≤-refl
   path-descent-pot A _ (path-cons .A ss ts hstep hrest) =
     subst (λ n -> n Nat.≤ potA A) (sym lhs)
           (NatP.≤-trans (NatP.+-monoʳ-≤ (steps-kc ss) (path-descent-pot (run ss A) ts hrest))

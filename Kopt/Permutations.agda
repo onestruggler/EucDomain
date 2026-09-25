@@ -264,14 +264,21 @@ column-info (a ∷ b ∷ c ∷ d ∷ []) with phase-of a | phase-of b | phase-of
 -- If the matrix is a generalized permutation, return its permutation
 -- a₀a₁a₂a₃ and its phase exponents p₀p₁p₂p₃, so that the matrix is
 -- gperm-matrix a₀ a₁ a₂ a₃ p₀ p₁ p₂ p₃.
+-- The case analysis is in the auxiliary function gperm-data-of rather
+-- than in a "with", so that the four column-info results can be
+-- rewritten when reasoning about gperm-data (and so that the type
+-- checker never normalizes the matrix under a with-abstraction).
+gperm-data-of : Maybe (ℕ × ℕ) -> Maybe (ℕ × ℕ) -> Maybe (ℕ × ℕ) -> Maybe (ℕ × ℕ) ->
+                Maybe (Tuple4 × Tuple4)
+gperm-data-of (just (a₀ , p₀)) (just (a₁ , p₁)) (just (a₂ , p₂)) (just (a₃ , p₃)) =
+  if distinct4 (a₀ , a₁ , a₂ , a₃)
+  then just ((a₀ , a₁ , a₂ , a₃) , (p₀ , p₁ , p₂ , p₃))
+  else nothing
+gperm-data-of _ _ _ _ = nothing
+
 gperm-data : Matrix 4 4 DComplex -> Maybe (Tuple4 × Tuple4)
-gperm-data (Matrix' (v₀ ∷ v₁ ∷ v₂ ∷ v₃ ∷ []))
-  with column-info v₀ | column-info v₁ | column-info v₂ | column-info v₃
-... | just (a₀ , p₀) | just (a₁ , p₁) | just (a₂ , p₂) | just (a₃ , p₃) =
-      if distinct4 (a₀ , a₁ , a₂ , a₃)
-      then just ((a₀ , a₁ , a₂ , a₃) , (p₀ , p₁ , p₂ , p₃))
-      else nothing
-... | _ | _ | _ | _ = nothing
+gperm-data (Matrix' (v₀ ∷ v₁ ∷ v₂ ∷ v₃ ∷ [])) =
+  gperm-data-of (column-info v₀) (column-info v₁) (column-info v₂) (column-info v₃)
 
 -- Is the matrix a generalized permutation? (Equivalently, by Section
 -- III C, is it a Clifford+CS operator of lde 0?)
@@ -314,7 +321,18 @@ private
 -- ⟦gperm-of m⟧ = m, and the circuit has at most 9 gates, at most one
 -- CS gate and no K gate. Otherwise the result is nothing (the
 -- authors' Haskell gperm_of raises an error in that case).
+-- The circuit that gperm-of produces for the generalized permutation
+-- with permutation part p and phase exponents ph: the shortest of the
+-- four candidates. It is named (and public) so that it can be
+-- reasoned about without unfolding gperm-of; see Kopt.SynthProperties.
+gperm-circuit-for : Tuple4 -> Tuple4 -> Circuit
+gperm-circuit-for p ph = shortest (gperm-candidates p ph)
+
+-- Again the case analysis is in an auxiliary function rather than in
+-- a "with", so that gperm-of can be computed from a known gperm-data.
+gperm-of-data : Maybe (Tuple4 × Tuple4) -> Maybe Circuit
+gperm-of-data nothing = nothing
+gperm-of-data (just (p , ph)) = just (gperm-circuit-for p ph)
+
 gperm-of : Matrix 4 4 DComplex -> Maybe Circuit
-gperm-of m with gperm-data m
-... | nothing = nothing
-... | just (p , ph) = just (shortest (gperm-candidates p ph))
+gperm-of m = gperm-of-data (gperm-data m)

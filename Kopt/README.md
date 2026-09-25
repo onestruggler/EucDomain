@@ -20,7 +20,10 @@ two-qubit operator is a `Matrix 4 4 DComplex`.
 | `Kopt.Patterns` | IV A–B | the six residue patterns, `lemma-six`, the refinements `refine-ii` … `refine-vi` and their ρ₂ normal forms |
 | `Kopt.Synth` | IV B–C | `decrease1-lde`, `synth`, `optimize-gp`, `prkc` (Table II), Cor. IV.8 |
 | `Kopt.Properties.*` | II | the proofs of Section II (see below); `Kopt.Properties.Algebra` re-exports them |
-| `Kopt.Descent`, `Kopt.Optimality` | V | descents, the optimality statements and their proofs/checks |
+| `Kopt.Descent`, `Kopt.Optimality` | V | descents (Def. V.1–V.2), Equation (3), Thm V.9, Cor. V.8/V.10, Remark V.11 |
+| `Kopt.NormalForms` | V | the residue enumerations behind Lemmas V.3, V.4 and V.6 |
+| `Kopt.OptSteps`, `Kopt.OptPotential`, `Kopt.OptInduction` | V | single descent steps (Remark II.10 for a K gate, invertibility), the Table II potential, and the induction proving Lemma V.7 |
+| `Kopt.SynthProperties` | IV | properties of the synthesis algorithm itself |
 
 Tests are in `Test/Kopt*.agda`; the `*Run` modules are compiled programs (`agda --compile`).
 
@@ -33,8 +36,22 @@ and mod γ³ (including ρ₂(x†) = ρ₂(x) and ρ₃(x†) = ab(c⊕b)); Lem
 K-action cases of Section II C; and that the `lde` used by the algorithm is the least denominator
 exponent (existence and minimality).
 
-Executable and exhaustively checked: the 24 Table I circuits, the 256 diagonal unitaries, and all
-6144 generalized permutations (each synthesized exactly, with ≤ 9 gates, ≤ 1 CS and no K gate).
+Section V: Equation (3) (every circuit is an alternating sequence of generalized permutations and K₁
+gates with the same K-count), every K-free circuit is a generalized permutation, Remark II.10 (in
+particular that a K gate changes the lde by at most one, and that nothing else changes it), Theorem
+V.9's upper bound, the Corollary V.8 count bounds, Lemma V.5, Remark V.11, Corollary V.10 with the
+corrected constant, and **Lemma V.7** (the complete path descent is K-optimal), proved by induction on
+the Table II potential 2·lde(A) − rank(pat A), given Lemmas V.4 and V.6.
+
+Exhaustively checked by the type checker (these checks are proofs): the 24 Table I circuits, the 256
+diagonal unitaries, all 6144 generalized permutations (each synthesized exactly, with ≤ 9 gates, ≤ 1 CS
+and no K gate), and the residue enumerations behind Lemma V.3 (the achievable ρ₂ normal forms against
+all generalized permutations), Lemma V.4 (8064 one-K-gate 1-ascents) and Lemma V.6 (1536 residue steps).
+
+Checked by execution only: Theorem V.9's lower bound rests on "every two-qubit Clifford needs ≤ 2 K
+gates", verified by a BFS producing exactly 46080 elements — the whole Clifford group with phases —
+closed under all generators. Corollary V.8's K-optimality is therefore conditional on that and on the
+algorithmic facts about `synth`.
 
 End-to-end validation against the authors' dataset (`experiment_data.dat`, 12,000 records, lde up to
 152): for every record, `lde U` is the recorded lde, `⟦synth U⟧ = U` exactly, and the K- and CS-counts

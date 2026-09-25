@@ -563,3 +563,4 @@ inv-perm-check = all-of inv-perm-one six-cases
 v3-check = all-of no-one-K-descent? lemma-V-3-forms
 v4-check = all-of v4-one six-cases
 v6-check = all-of v6-form vi-forms
+

@@ -45,6 +45,8 @@ open import Kopt.Synth
 open import Kopt.Descent
 open import Kopt.Optimality
 open import Kopt.NormalForms
+open import Kopt.OptSteps
+open import Kopt.OptPotential
 open import Kopt.OptInduction
 
 -- ----------------------------------------------------------------------

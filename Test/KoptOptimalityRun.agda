@@ -288,8 +288,8 @@ private
   synth-of-op : Record -> Op -> Synthc
   synth-of-op r u = synth-with r u (synth u)
 
-  synth-of : Record -> Synthc
-  synth-of r = synth-of-op r (operator-of r)
+  synth-of-record : Record -> Synthc
+  synth-of-record r = synth-of-op r (operator-of r)
 
 -- ----------------------------------------------------------------------
 -- ** Accumulating
@@ -343,7 +343,7 @@ private
 
   loop-rec cd zero a ss r = loop-next cd 0 ss (add-arith a (arith-of r))
   loop-rec cd (suc sample) a ss r =
-    loop-next cd sample ss (add-synth (add-arith a (arith-of r)) (synth-of r))
+    loop-next cd sample ss (add-synth (add-arith a (arith-of r)) (synth-of-record r))
 
   loop-next zero sample ss a =
     putStrLn ("... " Str.++ show (n-total a) Str.++ " records") >> loop 499 sample a ss

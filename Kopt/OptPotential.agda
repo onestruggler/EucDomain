@@ -269,18 +269,32 @@ private
   two-pot : 2 Nat.+ pot (just I) 0 Nat.≤ pot (just II) 1
   two-pot = NatP.≤-refl
 
+  -- The two branches of the K-count-1 case, with the equality of the
+  -- ldes as an explicit argument of known type: ≡ᵇ⇒≡ and subst both
+  -- have implicit arguments that nothing else would determine.
+  case-k1-keep : (s t : SixCases) (l l' : ℕ) -> (l ≡ 0 -> s ≡ I) -> l' ≡ l ->
+                 fig1-keep s t ≡ true -> 1 Nat.+ pot (just t) l' Nat.≤ pot (just s) l
+  case-k1-keep s t l l' hI el hkeep =
+    subst (λ m -> 1 Nat.+ pot (just t) m Nat.≤ pot (just s) l) (sym el)
+          (keep-pot s t l hI hkeep)
+
+  case-k1-drop : (s t : SixCases) (l l' : ℕ) -> pat-rank (just t) Nat.≤ 2 Nat.* l' ->
+                 suc l' ≡ l -> fig1-drop s t ≡ true ->
+                 1 Nat.+ pot (just t) l' Nat.≤ pot (just s) l
+  case-k1-drop s t l l' hr el2 hdrop =
+    subst (λ m -> 1 Nat.+ pot (just t) l' Nat.≤ pot (just s) m) el2
+          (drop-pot s t l' hr hdrop)
+
   case-k1 : (s t : SixCases) (l l' : ℕ) -> (l ≡ 0 -> s ≡ I) -> pat-rank (just t) Nat.≤ 2 Nat.* l' ->
             (if (l' Nat.≡ᵇ l) then fig1-keep s t
              else (if suc l' Nat.≡ᵇ l then fig1-drop s t else false)) ≡ true ->
             1 Nat.+ pot (just t) l' Nat.≤ pot (just s) l
-  case-k1 s t l l' hI hr h with if-true (l' Nat.≡ᵇ l) h
-  ... | inj₁ (el , hkeep) =
-        subst (λ m -> 1 Nat.+ pot (just t) m Nat.≤ pot (just s) l) (sym (≡ᵇ⇒≡ el))
-              (keep-pot s t l hI hkeep)
-  ... | inj₂ (_ , h2) with if-true (suc l' Nat.≡ᵇ l) h2
-  ...   | inj₁ (el2 , hdrop) =
-          subst (λ m -> 1 Nat.+ pot (just t) l' Nat.≤ pot (just s) m) (≡ᵇ⇒≡ el2)
-                (drop-pot s t l' hr hdrop)
+  case-k1 s t l l' hI hr h
+    with if-true (l' Nat.≡ᵇ l) (fig1-keep s t)
+                 (if suc l' Nat.≡ᵇ l then fig1-drop s t else false) h
+  ... | inj₁ (el , hkeep) = case-k1-keep s t l l' hI (≡ᵇ⇒≡ el) hkeep
+  ... | inj₂ (_ , h2) with if-true (suc l' Nat.≡ᵇ l) (fig1-drop s t) false h2
+  ...   | inj₁ (el2 , hdrop) = case-k1-drop s t l l' hr (≡ᵇ⇒≡ el2) hdrop
   ...   | inj₂ (_ , hf) = ⊥-elim (false-true hf)
 
   ∧-true₄ : {a b c d : Bool} -> a ∧ b ∧ c ∧ d ≡ true ->
@@ -318,18 +332,29 @@ private
                 fig1-step-of (just s) l (just t) l' k ≡ fig1-body s l t l' k
   fig1-body-≡ s l t l' k = refl
 
+  -- Replacing the K-count by the value the guard fixed it to.
+  kc-subst : (s t : SixCases) (l l' k n : ℕ) -> k ≡ n ->
+             n Nat.+ pot (just t) l' Nat.≤ pot (just s) l ->
+             k Nat.+ pot (just t) l' Nat.≤ pot (just s) l
+  kc-subst s t l l' k n e p =
+    subst (λ m -> m Nat.+ pot (just t) l' Nat.≤ pot (just s) l) (sym e) p
+
   fig1-body-pot : (s t : SixCases) (l l' k : ℕ) ->
                   (l ≡ 0 -> s ≡ I) -> pat-rank (just t) Nat.≤ 2 Nat.* l' ->
                   fig1-body s l t l' k ≡ true ->
                   k Nat.+ pot (just t) l' Nat.≤ pot (just s) l
-  fig1-body-pot s t l l' k hI hr h with if-true (k Nat.≡ᵇ 1) h
-  ... | inj₁ (ek , h1) =
-        subst (λ n -> n Nat.+ pot (just t) l' Nat.≤ pot (just s) l) (sym (≡ᵇ⇒≡ ek))
-              (case-k1 s t l l' hI hr h1)
-  ... | inj₂ (_ , h1) with if-true (k Nat.≡ᵇ 2) h1
-  ...   | inj₁ (ek2 , h2) =
-          subst (λ n -> n Nat.+ pot (just t) l' Nat.≤ pot (just s) l) (sym (≡ᵇ⇒≡ ek2))
-                (case-k2 s t l l' h2)
+  fig1-body-pot s t l l' k hI hr h
+    with if-true (k Nat.≡ᵇ 1)
+                 (if l' Nat.≡ᵇ l then fig1-keep s t
+                  else (if suc l' Nat.≡ᵇ l then fig1-drop s t else false))
+                 (if k Nat.≡ᵇ 2
+                  then ((s == II) ∧ (t == I) ∧ (l Nat.≡ᵇ 1) ∧ (l' Nat.≡ᵇ 0))
+                  else false) h
+  ... | inj₁ (ek , h1) = kc-subst s t l l' k 1 (≡ᵇ⇒≡ ek) (case-k1 s t l l' hI hr h1)
+  ... | inj₂ (_ , h1)
+        with if-true (k Nat.≡ᵇ 2)
+                     ((s == II) ∧ (t == I) ∧ (l Nat.≡ᵇ 1) ∧ (l' Nat.≡ᵇ 0)) false h1
+  ...   | inj₁ (ek2 , h2) = kc-subst s t l l' k 2 (≡ᵇ⇒≡ ek2) (case-k2 s t l l' h2)
   ...   | inj₂ (_ , hf) = ⊥-elim (false-true hf)
 
 -- One step of a path descent (Figure 1) costs exactly the drop in the
