@@ -6,7 +6,9 @@ import Quantum.Synthesis.Ring as R
 import Quantum.Synthesis.Ring.Properties.DyadicComplex as D
 import Quantum.Synthesis.Ring.Properties.GammaDenominator as G
 open import Data.Integer.Base using (+_; -[1+_])
-open import Data.Nat using (s≤s; z≤n)
+open import Data.Nat using (s≤s; z≤n; _≤_)
+open import Data.Empty using (⊥)
+open import Relation.Nullary using (¬_)
 open import Data.Product using (_,_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
@@ -40,3 +42,24 @@ _ = refl
 _ : D.embed (R.to-whole {R.DComplex} {R.ZComplex}
       (R.denomexp-factorBy R.OnePlusIBase negative 5)) ≡ R.denomexp-factorBy R.OnePlusIBase negative 5
 _ = G.denominator-factor-whole-at negative 5 (s≤s (s≤s (s≤s z≤n)))
+
+-- Lower bounds rule out *any* integer numerator at a smaller exponent.
+negative-needs-three : ¬ G.Clears negative 2
+negative-needs-three h = impossible (G.denominator-minimal negative 2 h)
+  where
+  impossible : 3 ≤ 2 → ⊥
+  impossible (s≤s (s≤s ()))
+
+half-real-needs-two : ¬ G.Clears (R.Cplx (R.dyadic (+ 1) 1) (R.dyadic (+ 0) 0)) 1
+half-real-needs-two h = impossible
+  (G.denominator-minimal (R.Cplx (R.dyadic (+ 1) 1) (R.dyadic (+ 0) 0)) 1 h)
+  where
+  impossible : 2 ≤ 1 → ⊥
+  impossible (s≤s ())
+
+mixed-needs-four : ¬ G.Clears (R.Cplx (R.dyadic (+ 1) 2) (R.dyadic (+ 1) 1)) 3
+mixed-needs-four h = impossible
+  (G.denominator-minimal (R.Cplx (R.dyadic (+ 1) 2) (R.dyadic (+ 1) 1)) 3 h)
+  where
+  impossible : 4 ≤ 3 → ⊥
+  impossible (s≤s (s≤s (s≤s ())))

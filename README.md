@@ -247,10 +247,13 @@ zero exponents. `align-dyadic` exposes the existing alignment calculation
 without changing its algorithm. `Typeclasses.Properties.Powers.cancel-step`
 provides the generic invertible-base cancellation used by the proof.
 
-These are soundness/reconstruction theorems. Equality of this operational
-exponent with a least denominator exponent is a separate obligation.
+`denominator-minimal` proves that the operational exponent is least among
+all powers that clear the scalar to Gaussian integers. The proof uses the
+canonical dyadic numerator to rule out two further gamma factors after
+alignment, and the parity test to determine whether one factor cancels.
 `Test.GammaDenominator` exercises integral, negative, mixed-denominator and
-redundantly scaled inputs; `Everything.agda` includes both modules.
+redundantly scaled inputs, and proves that selected smaller exponents cannot
+clear any integer numerator; `Everything.agda` includes both modules.
 
 ## Testing
 
