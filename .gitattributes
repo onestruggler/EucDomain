@@ -1,0 +1,8 @@
+# Keep Agda source files in LF form on every platform.
+*.agda text eol=lf
+*.lagda text eol=lf
+*.lagda.md text eol=lf
+*.lagda.tex text eol=lf
+*.lagda.rst text eol=lf
+*.lagda.org text eol=lf
+.gitattributes text eol=lf
