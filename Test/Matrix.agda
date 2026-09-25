@@ -8,6 +8,7 @@ module Test.Matrix where
 
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl)
 open import Data.Integer.Base using (ℤ)
+open import Data.Empty using (⊥)
 open import Data.List.Base using (List ; [] ; _∷_)
 open import Data.Maybe.Base using (just ; nothing)
 open import Data.Nat.Base using (ℕ)
@@ -20,6 +21,39 @@ open import Literals
 open import Quantum.Synthesis.Ring
 open import Quantum.Synthesis.Matrix
 open import Test.Ring using (FourBase ; inverse-one-plus-omega)
+import Quantum.Synthesis.Matrix.Properties as MP
+import Quantum.Synthesis.Ring.Properties as RP
+import Quantum.Synthesis.Ring.Properties.DyadicComplex as DC
+
+private
+  module ZLinear = MP.Linear {R = ZComplex} {{RingCplx}} RP.isCommutativeRing-ZComplex
+  module ZConjugate = ZLinear.Conjugate RP.adj-ZComplex
+  module Embed = MP.Map {A = ZComplex} {B = DComplex} {{RingCplx}} {{RingCplx}}
+    RP.isCommutativeRing-ZComplex RP.isCommutativeRing-DComplex DC.embed-isRingHom
+
+  upper diagonal : Matrix 2 2 ZComplex
+  upper = matrix2x2 (0 , 1) (0 , 0)
+  diagonal = matrix2x2 (1 , 0) (0 , 0)
+
+  emptyLeft : Matrix 2 0 ZComplex
+  emptyLeft = Matrix' []
+  emptyRight : Matrix 0 3 ZComplex
+  emptyRight = Matrix' ([] ∷ [] ∷ [] ∷ [])
+
+-- Scalar adj is multiplicative; native matrix adjoint reverses the order.
+_ : adjoint (upper ·*· diagonal) ≡ adjoint diagonal ·*· adjoint upper
+_ = ZConjugate.†-* upper diagonal
+
+_ : adjoint (upper ·*· diagonal) ≡ adjoint upper ·*· adjoint diagonal → ⊥
+_ = λ ()
+
+-- The empty inner dimension must still preserve the additive zero.
+_ : (Matrix' [] ·*· Matrix' ([] ∷ [] ∷ [] ∷ [])) ≡ (Matrix 2 3 DComplex ∋ null-matrix)
+_ = refl
+
+_ : matrix-map DC.embed (emptyLeft ·*· emptyRight) ≡
+  matrix-map DC.embed emptyLeft ·*· matrix-map DC.embed emptyRight
+_ = Embed.map-product emptyLeft emptyRight
 
 -- Base selection propagates through vectors and rectangular matrices.
 denominator-example : Matrix 2 3 DRootTwo

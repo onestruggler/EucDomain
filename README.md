@@ -262,6 +262,22 @@ machine with cached dependencies and a 4 GB Agda heap, checking
 `GammaDenominator.agda` took 51.3 s after this refactor versus 161.7 s before.
 This is a module typechecking measurement, not a synthesizer runtime benchmark.
 
+## Native matrix laws
+
+`Quantum.Synthesis.Matrix.Properties` supplies entries, tabulation,
+extensionality, finite sums, and generic laws for the native column-major
+matrix type. `Linear` takes the coefficient ring laws and proves product
+associativity, identities and scalar-product rules for rectangular matrices,
+including empty and singleton inner dimensions. `Linear.Conjugate` proves
+adjoint entry formulas, involution and reversal of matrix products from the
+coefficient adjoint automorphism. `Map` lifts a coefficient ring homomorphism
+to preservation of native matrix products and identities.
+
+The generic matrix theory is adapted from the independently developed
+`Kopt.Algebra.Linear` at Kopt revision `a0b62a0`; it has no Kopt dependency.
+`Test.Matrix` includes an empty-product embedding check and a noncommuting
+example that distinguishes the matrix adjoint law from scalar multiplicativity.
+
 ## Testing
 
 `Test/*.agda` contain checks by evaluation (`refl`); `Test/*Run.agda`

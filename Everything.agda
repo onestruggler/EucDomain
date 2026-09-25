@@ -39,6 +39,7 @@ import Quantum.Synthesis.GridProblems
 import Quantum.Synthesis.GridSynth
 import Quantum.Synthesis.LaTeX
 import Quantum.Synthesis.Matrix
+import Quantum.Synthesis.Matrix.Properties
 import Quantum.Synthesis.MultiQubitSynthesis
 import Quantum.Synthesis.Newsynth
 import Quantum.Synthesis.QuadraticEquation
