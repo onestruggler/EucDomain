@@ -284,6 +284,23 @@ module Linear {R : Set} {{_ : Ring R}} (isCR : IsCommutativeRing _≡_ _+_ _*_ -
     gram-scale : ∀ x (M : Matrix m n R) → gram (x · M) ≡ (x * adj x) · gram M
     gram-scale x M = trans (cong ((x · M) ·*·_) (†-· x M)) (·-* x (adj x) M (adjoint M))
 
+    ·-adj-injective : ∀ x →
+      (∀ {a b} {M N : Matrix a b R} → x · M ≡ x · N → M ≡ N) →
+      ∀ (M N : Matrix m n R) → adj x · M ≡ adj x · N → M ≡ N
+    ·-adj-injective x cancel M N h = trans (sym (†-† M))
+      (trans (cong adjoint (cancel {M = adjoint M} {N = adjoint N}
+        (trans (sym (transport M)) (trans (cong adjoint h) (transport N))))) (†-† N))
+      where
+      transport : ∀ (A : Matrix m n R) → adjoint (adj x · A) ≡ x · adjoint A
+      transport A = trans (†-· (adj x) A) (cong (_· adjoint A) (involutive x))
+
+    ·-norm-injective : ∀ x →
+      (∀ {a b} {M N : Matrix a b R} → x · M ≡ x · N → M ≡ N) →
+      ∀ (M N : Matrix m n R) → (x * adj x) · M ≡ (x * adj x) · N → M ≡ N
+    ·-norm-injective x cancel M N h = ·-adj-injective x cancel M N
+      (cancel {M = adj x · M} {N = adj x · N}
+        (trans (·-assoc x (adj x) M) (trans h (sym (·-assoc x (adj x) N)))))
+
 -- A coefficient homomorphism preserves native matrix multiplication.
 module Map {A B : Set} {{ra : Ring A}} {{rb : Ring B}}
   (la : IsCommutativeRing (_≡_ {A = A}) _+_ _*_ -_ 0# 1#)
