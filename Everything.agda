@@ -61,6 +61,25 @@ import Quantum.Synthesis.Ring.Properties.Poly
 import Quantum.Synthesis.Ring.Properties.RootTwo
 import Quantum.Synthesis.Ring.Properties.Z2
 
+-- Formalization of K-optimal two-qubit Clifford+CS synthesis
+-- (Bian and Feng), see Kopt/README.md.
+import Kopt.Base
+import Kopt.Gates
+import Kopt.Permutations
+import Kopt.Patterns
+import Kopt.Synth
+import Kopt.Descent
+import Kopt.Optimality
+import Kopt.SynthProperties
+import Kopt.Properties.Algebra
+import Kopt.Properties.Gamma
+import Kopt.Properties.DyadicTools
+import Kopt.Properties.Residue
+import Kopt.Properties.KAction
+import Kopt.Properties.KResidue
+import Kopt.Properties.Lde
+import Kopt.Properties.LdeLemmas
+
 -- The gridsynth command line program (not --safe: uses FFI for
 -- stderr, time).
 import Programs.GetOpt
@@ -91,3 +110,15 @@ import Test.Ring
 import Test.RingProperties
 import Test.RotationDecompositionRun
 import Test.StepComp
+import Test.KoptAlgebra
+import Test.KoptBase
+import Test.KoptCountsRun
+import Test.KoptGates
+import Test.KoptNormRun
+import Test.KoptOptimality
+import Test.KoptOptimalityRun
+import Test.KoptPatternsRun
+import Test.KoptPermutations
+import Test.KoptPermutationsRun
+import Test.KoptSynth
+import Test.KoptSynthRun
