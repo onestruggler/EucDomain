@@ -9,7 +9,8 @@ overloads operators and constants with instance arguments.
 Requires Agda 2.8.0 and the Agda standard library 2.4 (see
 `EucDomain.agda-lib`). `agda Everything.agda` type checks everything;
 give it a large enough heap (`agda +RTS -M6G -RTS Everything.agda`),
-since one process holds every module and interface at once.
+since one process holds every module and interface at once. A build
+from scratch takes about 16 minutes, an incremental one about 2.
 
 Note on type-checking cost: what is expensive in this development is
 deciding that two *different expressions* denote the same *concrete*
