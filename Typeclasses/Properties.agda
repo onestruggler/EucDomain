@@ -101,6 +101,10 @@ module Powers {A : Set} {{sr : SemiRing A}}
       (trans (cong (_* power x n) (sym (^-correct x m)))
         (cong ((x ^ m) *_) (sym (^-correct x n)))))
 
+  action-compose : ∀ x m n z → (x ^ m) * ((x ^ n) * z) ≡ (x ^ (m + n)) * z
+  action-compose x m n z = trans (sym (assoc (x ^ m) (x ^ n) z))
+    (cong (_* z) (sym (^-add x m n)))
+
   ^-one : ∀ n → 1# ^ n ≡ 1#
   ^-one zero = refl
   ^-one (suc n) = trans (^-suc 1# n) (trans (identityˡ (1# ^ n)) (^-one n))
