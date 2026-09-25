@@ -82,3 +82,39 @@ _ = IsInvolutiveRingEndo.involutive adj2-ZOmega
 
 _ : ∀ (x y : ZRootTwo) -> norm (x * y) ≡ norm x * norm y
 _ = norm-*-ZRootTwo
+
+-- Homomorphism interfaces work for different carriers and compose.
+import Quantum.Synthesis.Ring.Properties.Hom as Hom
+open import Data.Integer.Base using (ℤ)
+open import Algebra.Morphism.Structures using (IsRingHomomorphism ; IsMonoidHomomorphism)
+
+_ : IsRingHom {ℤ} {ZComplex} (λ a -> Cplx a 0#)
+_ = lift-Cplx-isRingHom isCommutativeRing-ℤ
+
+_ : IsRingHom {ℤ} {ZRootTwo} (λ a -> RootTwo a 0#)
+_ = lift-RootTwo-isRingHom isCommutativeRing-ℤ
+
+_ : IsRingHom {ℤ} {ZOmega} (λ a -> Omega 0# 0# 0# a)
+_ = lift-Omega-isRingHom isCommutativeRing-ℤ
+
+_ : IsRingHom {ℤ} {ZComplex [ω]} (λ a -> Omega 0# 0# 0# (Cplx a 0#))
+_ = Hom.compose-ring (lift-Omega-isRingHom isCommutativeRing-ZComplex)
+  (lift-Cplx-isRingHom isCommutativeRing-ℤ)
+
+_ : IsRingHomomorphism (Hom.instanceRawRing DOmega) (Hom.instanceRawRing DOmega) adj
+_ = Hom.toRingHomomorphism adj-isRingHom-DOmega
+
+_ : IsMonoidHomomorphism (Hom.instanceRawMonoid ZOmega) (Hom.instanceRawMonoid ℤ) norm
+_ = Hom.toMonoidHomomorphism norm-isMultiplicativeHom-ZOmega
+
+module OmegaNormPowers = Hom.MultiplicativeLaws {A = ZOmega} {B = ℤ}
+  (CommutativeRing.*-isCommutativeMonoid commutativeRing-ZOmega)
+  (CommutativeRing.*-isCommutativeMonoid commutativeRing-ℤ)
+  norm-isMultiplicativeHom-ZOmega
+
+_ : ∀ (x : ZOmega) n -> norm (x ^ n) ≡ norm x ^ n
+_ = OmegaNormPowers.f-^
+
+-- The homomorphism is multiplicative, not additive: N(1 + 1) = 4 in ℤ[i].
+_ : norm (1# {ZComplex} + 1#) ≡ (1# + 1#) * (1# + 1#)
+_ = refl

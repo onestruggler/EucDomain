@@ -138,3 +138,16 @@ module _ {A : Set} {{RA : Ring A}} (isCR : IsCommutativeRing (_≡_ {A = A}) _+_
   adj2-RootTwo F = record
     { isRingEndo = conj-RootTwo-isRingEndo (IsInvolutiveRingEndo.isRingEndo F)
     ; involutive = conj-RootTwo-involutive (IsInvolutiveRingEndo.isRingEndo F) (IsInvolutiveRingEndo.involutive F) }
+
+  -- The constant-coefficient embedding into the extension.
+  lift-RootTwo : A -> A [√2]
+  lift-RootTwo a = RootTwo a 0#
+
+  lift-RootTwo-isRingHom : Hom.IsRingHom lift-RootTwo
+  lift-RootTwo-isRingHom = record
+    { multiplicative = record
+      { f-* = λ a b -> by (a ∷ b ∷ []) (RootTwo ((var zero) * (var (suc zero))) 0#) ((RootTwo (var zero) 0#) * (RootTwo (var (suc zero)) 0#)) refl refl
+      ; f-1 = refl }
+    ; f-+ = λ a b -> by (a ∷ b ∷ []) (RootTwo ((var zero) + (var (suc zero))) 0#) ((RootTwo (var zero) 0#) + (RootTwo (var (suc zero)) 0#)) refl refl
+    ; f-0 = refl
+    ; f-neg = λ a -> by (a ∷ []) (RootTwo (- (var zero)) 0#) (- (RootTwo (var zero) 0#)) refl refl }

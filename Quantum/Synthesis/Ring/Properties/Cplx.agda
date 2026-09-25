@@ -21,6 +21,27 @@ open Hom using (IsRingEndo ; IsInvolutiveRingEndo)
 
 open _[i] using (re ; im)
 
+-- A coefficient-ring homomorphism lifts to complex extensions, including
+-- embeddings between different carriers such as ℤ[i] -> 𝔻[i].
+module _ {A B : Set} {{RA : Ring A}} {{RB : Ring B}} {f : A -> B}
+         (F : Hom.IsRingHom f) where
+  private
+    module F = Hom.IsRingHom F
+
+  mapCoefficients-Cplx : A [i] -> B [i]
+  mapCoefficients-Cplx (Cplx a b) = Cplx (f a) (f b)
+
+  mapCoefficients-Cplx-isRingHom : Hom.IsRingHom mapCoefficients-Cplx
+  mapCoefficients-Cplx-isRingHom = record
+    { multiplicative = record
+      { f-* = λ { (Cplx a b) (Cplx c d) -> cong₂ Cplx
+          (trans (F.f-sub (a * c) (b * d)) (cong₂ _-_ (F.f-* a c) (F.f-* b d)))
+          (trans (F.f-+ (a * d) (b * c)) (cong₂ _+_ (F.f-* a d) (F.f-* b c))) }
+      ; f-1 = cong₂ Cplx F.f-1 F.f-0 }
+    ; f-+ = λ { (Cplx a b) (Cplx c d) -> cong₂ Cplx (F.f-+ a c) (F.f-+ b d) }
+    ; f-0 = cong₂ Cplx F.f-0 F.f-0
+    ; f-neg = λ { (Cplx a b) -> cong₂ Cplx (F.f-neg a) (F.f-neg b) } }
+
 module _ {A : Set} {{RA : Ring A}} (isCR : IsCommutativeRing (_≡_ {A = A}) _+_ _*_ -_ 0# 1#) where
   open Poly isCR using (Polynomial ; var ; ⟦_⟧ ; ⟦_⟧↓ ; prove ; SemiRingPoly ; RingPoly)
 
@@ -138,3 +159,16 @@ module _ {A : Set} {{RA : Ring A}} (isCR : IsCommutativeRing (_≡_ {A = A}) _+_
   adj2-Cplx F = record
     { isRingEndo = map-Cplx-isRingEndo (IsInvolutiveRingEndo.isRingEndo F)
     ; involutive = map-Cplx-involutive (IsInvolutiveRingEndo.isRingEndo F) (IsInvolutiveRingEndo.involutive F) }
+
+  -- The constant-coefficient embedding into the extension.
+  lift-Cplx : A -> A [i]
+  lift-Cplx a = Cplx a 0#
+
+  lift-Cplx-isRingHom : Hom.IsRingHom lift-Cplx
+  lift-Cplx-isRingHom = record
+    { multiplicative = record
+      { f-* = λ a b -> by (a ∷ b ∷ []) (Cplx ((var zero) * (var (suc zero))) 0#) ((Cplx (var zero) 0#) * (Cplx (var (suc zero)) 0#)) refl refl
+      ; f-1 = refl }
+    ; f-+ = λ a b -> by (a ∷ b ∷ []) (Cplx ((var zero) + (var (suc zero))) 0#) ((Cplx (var zero) 0#) + (Cplx (var (suc zero)) 0#)) refl refl
+    ; f-0 = refl
+    ; f-neg = λ a -> by (a ∷ []) (Cplx (- (var zero)) 0#) (- (Cplx (var zero) 0#)) refl refl }

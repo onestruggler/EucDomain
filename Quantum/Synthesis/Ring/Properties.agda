@@ -48,7 +48,9 @@ open import Quantum.Synthesis.Ring.Properties.Cplx public
 open import Quantum.Synthesis.Ring.Properties.Omega public
 open import Quantum.Synthesis.Ring.Properties.Z2 public
 open import Quantum.Synthesis.Ring.Properties.Dyadic public
-open import Quantum.Synthesis.Ring.Properties.Hom public using (IsRingEndo ; IsInvolutiveRingEndo ; id-isInvolutiveRingEndo)
+open import Quantum.Synthesis.Ring.Properties.Hom public using
+  (IsRingEndo ; IsInvolutiveRingEndo ; id-isInvolutiveRingEndo ; IsRingHom ; IsMultiplicativeHom)
+import Quantum.Synthesis.Ring.Properties.Hom as Hom
 
 -- ----------------------------------------------------------------------
 -- * ℤ and ℚ
@@ -260,3 +262,59 @@ norm-*-ZComplex (Cplx a b) (Cplx c d) = solve 4 (λ a b c d ->
 
 open WithDyadicSpec dyadic-spec′ public
 open WithDyadicSpec-Adjoint dyadic-spec′ public
+
+-- Full ring-homomorphism records for the existing involutive adjoints.
+module AdjointHom {A : Set} {{RA : Ring A}} {{AA : Adjoint A}}
+  (laws : IsCommutativeRing (_≡_ {A = A}) _+_ _*_ -_ 0# 1#)
+  (F : IsInvolutiveRingEndo {A} adj) where
+  adj-isRingHom : IsRingHom {A} {A} adj
+  adj-isRingHom = Hom.Laws.isRingHom laws (IsInvolutiveRingEndo.isRingEndo F)
+
+adj-isRingHom-ZComplex : IsRingHom {ZComplex} {ZComplex} adj
+adj-isRingHom-ZComplex = AdjointHom.adj-isRingHom isCommutativeRing-ZComplex adj-ZComplex
+
+adj-isRingHom-DComplex : IsRingHom {DComplex} {DComplex} adj
+adj-isRingHom-DComplex = AdjointHom.adj-isRingHom isCommutativeRing-DComplex adj-DComplex
+
+adj-isRingHom-ZOmega : IsRingHom {ZOmega} {ZOmega} adj
+adj-isRingHom-ZOmega = AdjointHom.adj-isRingHom isCommutativeRing-ZOmega adj-ZOmega
+
+adj-isRingHom-DOmega : IsRingHom {DOmega} {DOmega} adj
+adj-isRingHom-DOmega = AdjointHom.adj-isRingHom isCommutativeRing-DOmega adj-DOmega
+
+-- Norms preserve multiplication and one; they need not preserve addition.
+norm-isMultiplicativeHom-ZComplex : IsMultiplicativeHom {ZComplex} {ℤ} norm
+norm-isMultiplicativeHom-ZComplex = record { f-* = norm-*-ZComplex ; f-1 = refl }
+
+norm-isMultiplicativeHom-ZRootTwo : IsMultiplicativeHom {ZRootTwo} {ℤ} norm
+norm-isMultiplicativeHom-ZRootTwo = record { f-* = norm-*-ZRootTwo ; f-1 = refl }
+
+-- The quartic cyclotomic norm is multiplicative as well. Prove the
+-- polynomial identity once with an explicit environment (no search over
+-- concrete integers and no axiom about the operational NormedRing class).
+private
+  module OmegaNorm where
+    import Quantum.Synthesis.Ring.Properties.Poly as Poly
+    open Poly isCommutativeRing-ℤ using (Polynomial ; var ; prove ; SemiRingPoly ; RingPoly)
+    open import Data.Fin.Patterns using (0F ; 1F ; 2F ; 3F ; 4F ; 5F ; 6F ; 7F)
+    open import Data.Vec.Base using ([] ; _∷_)
+    open _[ω] using (om-a ; om-b ; om-c ; om-d)
+
+    formula : ∀ {n} -> Polynomial n [ω] -> Polynomial n
+    formula (Omega a b c d) =
+      (a * a + b * b + c * c + d * d) * (a * a + b * b + c * c + d * d) -
+      (1# + 1#) * ((a * b + b * c + c * d - d * a) * (a * b + b * c + c * d - d * a))
+
+    X Y : Polynomial 8 [ω]
+    X = Omega (var 0F) (var 1F) (var 2F) (var 3F)
+    Y = Omega (var 4F) (var 5F) (var 6F) (var 7F)
+
+    multiplicative : ∀ (x y : ZOmega) -> norm (x * y) ≡ norm x * norm y
+    multiplicative (Omega a b c d) (Omega e f g h) =
+      prove (a ∷ b ∷ c ∷ d ∷ e ∷ f ∷ g ∷ h ∷ []) (formula (X * Y)) (formula X * formula Y) refl
+
+norm-*-ZOmega : ∀ (x y : ZOmega) -> norm (x * y) ≡ norm x * norm y
+norm-*-ZOmega = OmegaNorm.multiplicative
+
+norm-isMultiplicativeHom-ZOmega : IsMultiplicativeHom {ZOmega} {ℤ} norm
+norm-isMultiplicativeHom-ZOmega = record { f-* = norm-*-ZOmega ; f-1 = refl }

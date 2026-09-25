@@ -38,7 +38,7 @@ Requires Agda 2.8.0 and the Agda standard library 2.4 (see
   are commutative rings (stdlib `IsCommutativeRing`), generically for
   `A [√2]`, `A [i]`, `A [ω]` over any commutative ring A, and for
   ℤ₂ and 𝔻; that `adj` and `adj2` are involutive ring automorphisms;
-  and that the norms of ℤ[√2] and ℤ[i] are multiplicative.
+  and that the norms of ℤ[√2], ℤ[i], and ℤ[ω] are multiplicative.
 
 The Gaussian integers are `𝔾 = ℤ [i]` of the framework, with
 `a + b i` a pattern synonym for `Cplx a b`, so the ring operations,
@@ -185,6 +185,33 @@ Some design points (see the comments in `Typeclasses` and `Literals`):
   `/` means the same thing everywhere.
 - The name `i` clashes with the notation `a + b i`; modules using that
   notation hide `i`.
+
+## Algebraic maps
+
+`Quantum.Synthesis.Ring.Properties.Hom` provides instance-based
+`IsRingHom` (addition, multiplication, zero, one, negation) and
+`IsMultiplicativeHom` (multiplication and one). Ring homomorphisms also
+preserve subtraction; `MultiplicativeLaws.f-^` proves preservation of the
+operational fast power. `compose-ring` and `compose-multiplicative` compose
+maps between different carriers. `toRingHomomorphism` and
+`toMonoidHomomorphism` expose standard-library morphism structures.
+
+The existing `adj-*` and `adj2-*` proofs give involutive scalar ring
+automorphisms. `Hom.Laws.isRingHom` converts their endomorphism component
+to a full ring homomorphism. Ready-made `adj-isRingHom-ZComplex`,
+`adj-isRingHom-DComplex`, `adj-isRingHom-ZOmega`, and
+`adj-isRingHom-DOmega` live in `Quantum.Synthesis.Ring.Properties`.
+Matrix adjoints reverse multiplication order and are not covered by these
+scalar ring-homomorphism statements.
+
+The extension property modules prove `lift-Cplx-isRingHom`,
+`lift-RootTwo-isRingHom`, and `lift-Omega-isRingHom` for constant-coefficient
+embeddings over any commutative base ring. `mapCoefficients-Cplx-isRingHom`
+lifts any coefficient ring homomorphism to the complex extensions.
+`norm-isMultiplicativeHom-ZComplex`, `-ZRootTwo`, and `-ZOmega` package the
+integer-valued number-theoretic norms. These are multiplicative maps;
+no additivity of norms is asserted. `Test.RingProperties` checks composition,
+standard-library interoperability, and norm preservation of powers.
 
 ## Testing
 

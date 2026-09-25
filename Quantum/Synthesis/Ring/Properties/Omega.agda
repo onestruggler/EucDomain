@@ -164,3 +164,16 @@ module _ {A : Set} {{RA : Ring A}} (isCR : IsCommutativeRing (_≡_ {A = A}) _+_
   adj2-Omega F = record
     { isRingEndo = conj2-Omega-isRingEndo (IsInvolutiveRingEndo.isRingEndo F)
     ; involutive = conj2-Omega-involutive (IsInvolutiveRingEndo.isRingEndo F) (IsInvolutiveRingEndo.involutive F) }
+
+  -- The constant-coefficient embedding into the extension.
+  lift-Omega : A -> A [ω]
+  lift-Omega a = Omega 0# 0# 0# a
+
+  lift-Omega-isRingHom : Hom.IsRingHom lift-Omega
+  lift-Omega-isRingHom = record
+    { multiplicative = record
+      { f-* = λ a b -> by (a ∷ b ∷ []) (Omega 0# 0# 0# ((var zero) * (var (suc zero)))) ((Omega 0# 0# 0# (var zero)) * (Omega 0# 0# 0# (var (suc zero)))) refl refl refl refl
+      ; f-1 = refl }
+    ; f-+ = λ a b -> by (a ∷ b ∷ []) (Omega 0# 0# 0# ((var zero) + (var (suc zero)))) ((Omega 0# 0# 0# (var zero)) + (Omega 0# 0# 0# (var (suc zero)))) refl refl refl refl
+    ; f-0 = refl
+    ; f-neg = λ a -> by (a ∷ []) (Omega 0# 0# 0# (- (var zero))) (- (Omega 0# 0# 0# (var zero))) refl refl refl refl }
