@@ -92,3 +92,24 @@ import Test.Ring
 import Test.RingProperties
 import Test.RotationDecompositionRun
 import Test.StepComp
+
+-- Shared scalar arithmetic, congruences, Gaussian units and dyadic embeddings.
+import GauInt.Algebra
+import GauInt.Gamma
+import GauInt.Gamma.Congruence
+import GauInt.Gamma.Division
+import GauInt.Gamma.ImagCongruence
+import GauInt.Gamma.Integer
+import GauInt.Gamma.NormCongruence
+import GauInt.NormParity
+import GauInt.Parity
+import GauInt.Units
+import Integer.Congruence
+import Integer.Parity
+import Integer.Residues
+import Integer.Squares
+import Integer.Sum
+import Natural.Sum
+import Quantum.Synthesis.Ring.Properties.DyadicComplex
+import Finite.Check
+import GauInt.Gamma.Residue

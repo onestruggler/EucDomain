@@ -213,6 +213,29 @@ integer-valued number-theoretic norms. These are multiplicative maps;
 no additivity of norms is asserted. `Test.RingProperties` checks composition,
 standard-library interoperability, and norm preservation of powers.
 
+## Scalar arithmetic modules
+
+The reusable scalar theory used by Kopt lives here and has no dependency on
+Kopt matrices, circuits, synthesis, or its source tree:
+
+| Modules | Content |
+| --- | --- |
+| `GauInt.Algebra` | Gaussian ring laws, sparse solver, embeddings, adjoint and norm homomorphisms, units |
+| `GauInt.Gamma`, `GauInt.Gamma.Division`, `GauInt.Gamma.Integer` | Powers and divisibility by `1+i`, exact quotient, embedded-integer divisibility |
+| `GauInt.Gamma.Congruence`, `NormCongruence`, `ImagCongruence` | Decidable congruence modulo gamma powers and its norm/imaginary consequences |
+| `GauInt.Gamma.Residue` | Canonical eight-element encoding modulo gamma cubed, with arithmetic correctness |
+| `GauInt.Parity`, `GauInt.NormParity`, `GauInt.Units` | Gaussian parity, norm parity, and classification of the four units |
+| `Integer.Sum`, `Integer.Congruence`, `Integer.Residues`, `Integer.Parity`, `Integer.Squares` | Finite sums, congruences, residue bounds, Boolean parity, and square bounds |
+| `Natural.Sum` | Finite natural sums and permutation/ordering laws |
+| `Quantum.Synthesis.Ring.Properties.DyadicComplex` | Integer and Gaussian embeddings into dyadics, inverse-gamma scaling, denominator clearing |
+| `Finite.Check` | Generic finite proof-producing decision helpers used by residue certificates |
+
+`GauInt.Units.phaseToZI` is the scalar enumeration `1, i, -1, -i`.
+It is independent of circuit syntax. Integer parity and square bounds also
+have no Gaussian or matrix dependency. Matrix factorization and circuit
+optimality remain in the application. `Everything.agda` checks every module
+listed here against this library and the standard library alone.
+
 ## Testing
 
 `Test/*.agda` contain checks by evaluation (`refl`); `Test/*Run.agda`
