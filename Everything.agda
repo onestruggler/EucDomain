@@ -9,6 +9,7 @@ module Everything where
 
 -- The ring framework: type classes, instances, overloaded literals.
 import Typeclasses
+import Typeclasses.Properties
 import Instances
 import Literals
 

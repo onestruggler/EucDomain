@@ -36,6 +36,28 @@ open import Relation.Binary using (Rel ; Decidable ; DecidableEquality)
 -- ----------------------------------------------------------------------
 -- Type classes for Ring.
 
+-- The fast-power evaluator is exposed so its algebraic laws can be proved
+-- independently of the operational typeclass. Fuel and branch order agree
+-- with the original evaluator, including for inexact carriers.
+power-odd : ℕ -> Bool
+power-odd zero = false
+power-odd (suc zero) = true
+power-odd (suc (suc n)) = power-odd n
+
+power-acc : {A : Set} -> (A -> A -> A) -> ℕ -> A -> ℕ -> A -> A
+power-acc mul zero x y z = mul x z
+power-acc mul (suc f) x y z =
+  if not (power-odd y) then power-acc mul f (mul x x) (Nat.⌊ y /2⌋) z
+  else if y Nat.≡ᵇ suc zero then mul x z
+  else power-acc mul f (mul x x) (Nat.⌊ y /2⌋) (mul x z)
+
+power-fuel : {A : Set} -> (A -> A -> A) -> ℕ -> A -> ℕ -> A
+power-fuel mul zero x y = x
+power-fuel mul (suc f) x y =
+  if not (power-odd y) then power-fuel mul f (mul x x) (Nat.⌊ y /2⌋)
+  else if y Nat.≡ᵇ suc zero then x
+  else power-acc mul f (mul x x) (Nat.⌊ y /2⌋) x
+
 -- SemiRing typecalss has two operations + and * and two special
 -- numbers 0 and 1. The field fromℕ is the unique semiring
 -- homomorphism from ℕ, it is used to overload natural number
@@ -59,27 +81,7 @@ record SemiRing (A : Set) : Set where
   -- types (Float, FixedPrec) agrees with Haskell.
   _^_ : A -> ℕ -> A
   x ^ zero = 1#
-  x ^ n@(suc _) = pow n x n
-    where
-      odd : ℕ -> Bool
-      odd zero = false
-      odd (suc zero) = true
-      odd (suc (suc n)) = odd n
-
-      -- The first argument is fuel (y halves in each step).
-      pow-acc : ℕ -> A -> ℕ -> A -> A
-      pow-acc zero x y z = x * z
-      pow-acc (suc f) x y z =
-        if not (odd y) then pow-acc f (x * x) (Nat.⌊ y /2⌋) z
-        else if y Nat.≡ᵇ suc zero then x * z
-        else pow-acc f (x * x) (Nat.⌊ y /2⌋) (x * z)
-
-      pow : ℕ -> A -> ℕ -> A
-      pow zero x y = x
-      pow (suc f) x y =
-        if not (odd y) then pow f (x * x) (Nat.⌊ y /2⌋)
-        else if y Nat.≡ᵇ suc zero then x
-        else pow-acc f (x * x) (Nat.⌊ y /2⌋) x
+  x ^ n@(suc _) = power-fuel _*_ n x n
 
   -- Doubling.
   twice : A -> A

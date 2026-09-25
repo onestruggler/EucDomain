@@ -41,7 +41,7 @@ open import Relation.Nullary.Decidable.Core using (T?)
 open import Instances hiding (_≟_ ; _/_ ; _%_ ; _≤_ ; _<_)
 open import Quantum.Synthesis.Ring
   using (Dyadic ; Dyadic' ; dyadic ; SemiRingDyadic ; RingDyadic ; ToRationalDyadic ;
-         evenℤ ; evenℕ ; shiftR ; shiftL ; 2^ ; 2^ℤ ; pow2 ; Canonical)
+         evenℤ ; evenℕ ; shiftR ; shiftL ; 2^ ; 2^ℤ ; pow2 ; Canonical ; integer-of-dyadic)
 
 open ℤSolver.+-*-Solver using (solve ; _:=_ ; _:+_ ; _:*_ ; con)
 
@@ -324,6 +324,49 @@ u-dyadic′ a@(-[1+ _ ]) (suc n) with T? (evenℤ a)
 dyadic-spec′ : ∀ a n -> toℚ (dyadic′ a n) ≡ (a ℚ./ 2^ n) {{nz n}}
 dyadic-spec′ a n = trans (toℚ-u (dyadic′ a n))
   (trans (ℚP.fromℚᵘ-cong (u-dyadic′ a n)) (fromℚᵘ-/ a (2^ n) {{nz n}}))
+
+-- Changing a denominator bound preserves the represented number.
+abstract
+  dyadic-canonical : ∀ (x : Dyadic) -> dyadic (Dyadic.numerator x) (Dyadic.exponent x) ≡ x
+  dyadic-canonical x@(Dyadic' a n _) = toℚ-injective {x = dyadic a n} {y = x} (dyadic-spec′ a n)
+
+  dyadic-equal : ∀ a b n m -> a ℤ.* + 2^ m ≡ b ℤ.* + 2^ n -> dyadic a n ≡ dyadic b m
+  dyadic-equal a b n m h = toℚ-injective {x = dyadic a n} {y = dyadic b m}
+    (trans (toℚ-u (dyadic a n))
+      (trans (ℚP.fromℚᵘ-cong
+        (ℚᵘP.≃-trans (u-dyadic′ a n)
+          (ℚᵘP.≃-trans (/ᵘ-≃ a b (2^ n) (2^ m) {{nz n}} {{nz m}} h)
+            (ℚᵘP.≃-sym (u-dyadic′ b m)))))
+        (sym (toℚ-u (dyadic b m)))))
+
+  dyadic-upscale : ∀ a n m -> n ℕ.≤ m -> dyadic (shiftL a (m ℕ.∸ n)) m ≡ dyadic a n
+  dyadic-upscale a n m h = dyadic-equal (shiftL a (m ℕ.∸ n)) a m n
+    (trans (cong (λ t -> t ℤ.* + 2^ n) (shiftL≡ a (m ℕ.∸ n)))
+      (trans (ℤP.*-assoc a (+ 2^ (m ℕ.∸ n)) (+ 2^ n))
+        (cong (a ℤ.*_) (trans (sym (ℤP.pos-* (2^ (m ℕ.∸ n)) (2^ n)))
+          (cong +_ (trans (ℕP.*-comm (2^ (m ℕ.∸ n)) (2^ n)) (sym (2^-split n m h))))))))
+
+  dyadic-numerator-injective : ∀ a b n -> dyadic a n ≡ dyadic b n -> a ≡ b
+  dyadic-numerator-injective a b n h = ℤP.*-cancelʳ-≡ a b (+ 2^ n) {{nz n}}
+    (/ᵘ-≃⁻¹ a b (2^ n) (2^ n) {{nz n}} {{nz n}}
+      (ℚᵘP.≃-trans (ℚᵘP.≃-sym (u-dyadic′ a n))
+        (ℚᵘP.≃-trans (ℚᵘP.≃-reflexive (cong u h)) (u-dyadic′ b n))))
+
+dyadic-exponent-bound : ∀ a n -> Dyadic.exponent (dyadic a n) ℕ.≤ n
+dyadic-exponent-bound (+ zero) n = ℕ.z≤n
+dyadic-exponent-bound (+ suc a) zero = ℕ.z≤n
+dyadic-exponent-bound -[1+ a ] zero = ℕ.z≤n
+dyadic-exponent-bound a@(+ suc _) (suc n) with T? (evenℤ a)
+... | yes e = ℕP.m≤n⇒m≤1+n (dyadic-exponent-bound (shiftR a 1) n)
+... | no e = ℕP.≤-refl
+dyadic-exponent-bound a@(-[1+ _ ]) (suc n) with T? (evenℤ a)
+... | yes e = ℕP.m≤n⇒m≤1+n (dyadic-exponent-bound (shiftR a 1) n)
+... | no e = ℕP.≤-refl
+
+integer-of-dyadic-correct : ∀ x m -> Dyadic.exponent x ℕ.≤ m -> dyadic (integer-of-dyadic x m) m ≡ x
+integer-of-dyadic-correct x@(Dyadic' a n _) m h with n ℕ.≤ᵇ m in eq
+... | true = trans (dyadic-upscale a n m h) (dyadic-canonical x)
+... | false = ⊥-elim (subst T eq (ℕP.≤⇒≤ᵇ h))
 
 -- ----------------------------------------------------------------------
 -- * toℚ is a ring homomorphism (given the specification of dyadic)

@@ -78,6 +78,14 @@ at the top of each module.
 
 ## Denominator bases
 
+`Typeclasses.Properties` proves successor, addition, product and inverse
+laws for the fast-power evaluator under explicit commutative-monoid laws,
+and preservation of powers by multiplicative maps. The evaluator retains
+its original branch order for inexact carriers.
+`Quantum.Synthesis.Ring.Properties.Dyadic` also proves denominator rescaling,
+the smart constructor's exponent bound, and exact recovery of a dyadic value
+from its integer numerator at any sufficient denominator bound.
+
 `Quantum.Synthesis.Ring.DenomExp Base A` computes a least denominator
 exponent and multiplies by a power of the selected base. The tag `Base`
 allows several denominator conventions on the same carrier:
