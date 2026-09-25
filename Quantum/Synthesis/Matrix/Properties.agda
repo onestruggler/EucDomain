@@ -340,3 +340,13 @@ module Map {A B : Set} {{ra : Ring A}} {{rb : Ring B}}
 
     map-gram : ∀ (M : Matrix m n A) → matrix-map f (SA.gram M) ≡ TA.gram (matrix-map f M)
     map-gram M = trans (map-product M (adjoint M)) (cong (matrix-map f M ·*·_) (map-adjoint M))
+
+    -- Transfer a cleared Gram equation before specializing coefficients to
+    -- a computational number representation such as canonical dyadics.
+    gram-unitary : ∀ z inverse (M : Matrix n n B) (N : Matrix n n A) →
+      inverse * f z ≡ 1# → matrix-map f (SA.gram N) ≡ f z scalarmult TA.gram M →
+      SA.gram N ≡ z scalarmult 𝕀 → TA.gram M ≡ 𝕀
+    gram-unitary z inverse M N hinv hscale hgram =
+      Target.·-cancel inverse (f z) hinv (TA.gram M) 𝕀
+        (trans (sym hscale) (trans (cong (matrix-map f) hgram)
+          (trans (map-scale z 𝕀) (cong (f z scalarmult_) map-identity))))
