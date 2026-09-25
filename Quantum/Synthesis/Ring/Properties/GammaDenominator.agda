@@ -98,14 +98,16 @@ private
   ... | false = R.Cplx a b , trans (D.*-identityˡ z) (sym (cong₂ R.Cplx
     (trans (sym (D.canonical (D.integer a))) ha) (trans (sym (D.canonical (D.integer b))) hb)))
   formula-clears z a b (suc n) ha hb with R.evenℤ (a + b) in eq
-  ... | false = w , subst (λ k → (D.gamma ^ k) * z ≡ D.embed w) double h
+  ... | false = w , subst (λ k → (D.gamma ^ k) * z ≡ D.embed w)
+    {x = suc n + suc n} {y = 2 * suc n} double h
     where
     w = (TC.i {R.ZComplex} ^ suc n) * R.Cplx a b
     h = clears-common z (R.Cplx a b) (suc n) (common-value z a b (suc n) ha hb)
     double : suc n + suc n ≡ 2 * suc n
     double = cong (λ k → suc n + k) (sym (NP.+-identityʳ (suc n)))
   ... | true = GD.divideGamma w , cancel-cleared z w (GD.divideGamma w) (2 * suc n ∸ 1)
-      (subst (λ k → (D.gamma ^ k) * z ≡ D.embed w) split h)
+      (subst (λ k → (D.gamma ^ k) * z ≡ D.embed w)
+        {x = suc n + suc n} {y = suc (2 * suc n ∸ 1)} split h)
       (GD.divide-complete w (G.even-mul (TC.i ^ suc n) (R.Cplx a b) (even-divisible (R.Cplx a b) eq)))
     where
     w = (TC.i {R.ZComplex} ^ suc n) * R.Cplx a b
@@ -117,17 +119,16 @@ denominator-clears : ∀ z → Clears z (R.denomexpBy R.OnePlusIBase z)
 denominator-clears (R.Cplx x y) with R.align-dyadic x y | align-correct x y
 ... | a , b , k | ha , hb = formula-clears (R.Cplx x y) a b k ha hb
 
+private
+  module ClearingActions = Power.MappedActions {A = R.ZComplex} {B = R.DComplex}
+    {{R.SemiRingCplx}} {{R.SemiRingCplx}}
+    D.embed G.powγ (λ n → D.gamma ^ n) D.embed-power D.embed-*
+    (D.Powers.action-compose D.gamma)
+
 clears-upscale : (z : R.DComplex) (n m : ℕ) → n ≤ m → Clears z n → Clears z m
-clears-upscale z n m le (w , h) = G.powγ d * w ,
-  trans {j = (D.gamma ^ (d + n)) * z}
-    (cong (λ k → (D.gamma ^ k) * z) (sym (NP.m∸n+n≡m le)))
-    (trans {j = (D.gamma ^ d) * ((D.gamma ^ n) * z)} (sym (D.Powers.action-compose D.gamma d n z))
-      (trans {j = (D.gamma ^ d) * D.embed w}
-        (cong ((D.gamma ^ d) *_) {x = (D.gamma ^ n) * z} {y = D.embed w} h)
-        (trans {j = D.embed (G.powγ d) * D.embed w}
-          (cong (_* D.embed w) {x = D.gamma ^ d} {y = D.embed (G.powγ d)} (sym (D.embed-power d)))
-          (sym (D.embed-* (G.powγ d) w)))))
-  where d = m ∸ n
+clears-upscale z n m le (w , h) = G.powγ (m ∸ n) * w ,
+  subst (λ k → (D.gamma ^ k) * z ≡ D.embed (G.powγ (m ∸ n) * w))
+    {x = (m ∸ n) + n} {y = m} (NP.m∸n+n≡m {m = m} {n = n} le) (ClearingActions.extend-clearing (m ∸ n) n z w h)
 
 private
   factor-whole : (z : R.DComplex) (k : ℕ) → Clears z k →
@@ -241,13 +242,8 @@ private
     (D.embed-injective {a = w} {b = G.powγ t * q} eq) (ZG.*-comm (G.powγ t) q)
     where
     eq : D.embed w ≡ D.embed (G.powγ t * q)
-    eq = trans {j = (D.gamma ^ (t + n)) * z} (sym high)
-      (trans {j = (D.gamma ^ t) * ((D.gamma ^ n) * z)} (sym (D.Powers.action-compose D.gamma t n z))
-        (trans {j = (D.gamma ^ t) * D.embed q}
-          (cong ((D.gamma ^ t) *_) {x = (D.gamma ^ n) * z} {y = D.embed q} low)
-          (trans {j = D.embed (G.powγ t) * D.embed q}
-            (cong (_* D.embed q) {x = D.gamma ^ t} {y = D.embed (G.powγ t)} (sym (D.embed-power t)))
-            (sym (D.embed-* (G.powγ t) q)))))
+    eq = trans {i = D.embed w} {j = (D.gamma ^ (t + n)) * z} {k = D.embed (G.powγ t * q)} (sym high)
+      (ClearingActions.extend-clearing t n z q low)
 
   bound-not-even : (z : R.DComplex) (n : ℕ) (w : R.ZComplex) →
     (D.gamma ^ suc n) * z ≡ D.embed w → ¬ G.Evenγ w →
@@ -268,6 +264,9 @@ private
     contradiction : (Σ[ q ∈ R.ZComplex ] w ≡ q * G.powγ 2) → ⊥
     contradiction (q , h) = nondiv q h
 
+  pred-double-suc : ∀ n → 2 * suc n ∸ 1 ≡ suc (n + n)
+  pred-double-suc n = trans (cong (n Data.Nat.+_) (NP.+-identityʳ (suc n))) (NP.+-suc n n)
+
   formula-minimal : (z : R.DComplex) (a b : ℤ) (k : ℕ) →
     R.dyadic a k ≡ R._[i].re z → R.dyadic b k ≡ R._[i].im z →
     PrimitivePair (a , b , k) → ∀ m → Clears z m → formula a b k ≤ m
@@ -275,7 +274,7 @@ private
   ... | true = z≤n
   ... | false = z≤n
   formula-minimal z a b (suc n) ha hb nondiv m low with R.evenℤ (a + b) in eq
-  ... | false = subst (_≤ m) double (bound-not-even z (n + suc n) w high odd m low)
+  ... | false = subst (_≤ m) {x = suc n + suc n} {y = 2 * suc n} double (bound-not-even z (n + suc n) w high odd m low)
     where
     u : R.ZComplex
     u = TC.i ^ suc n
@@ -287,7 +286,7 @@ private
     odd even = false-not-even (R.Cplx a b) eq (G.even-unscale u (R.Cplx a b) (unit-i-power (suc n)) even)
     double : suc n + suc n ≡ 2 * suc n
     double = cong (λ k → suc n + k) (sym (NP.+-identityʳ (suc n)))
-  ... | true = subst (_≤ m) (sym oneLess) (bound-no-double z (n + n) w high
+  ... | true = subst (_≤ m) {x = suc (n + n)} {y = 2 * suc n ∸ 1} (sym oneLess) (bound-no-double z (n + n) w high
       (no-double-unit u (R.Cplx a b) (unit-i-power (suc n)) nondiv) m low)
     where
     u : R.ZComplex
@@ -295,10 +294,11 @@ private
     w : R.ZComplex
     w = u * R.Cplx a b
     high : (D.gamma ^ suc (suc (n + n))) * z ≡ D.embed w
-    high = subst (λ k → (D.gamma ^ k) * z ≡ D.embed w) (cong suc (NP.+-suc n n))
+    high = subst (λ k → (D.gamma ^ k) * z ≡ D.embed w)
+      {x = suc n + suc n} {y = suc (suc (n + n))} (cong suc (NP.+-suc n n))
       (clears-common z (R.Cplx a b) (suc n) (common-value z a b (suc n) ha hb))
     oneLess : 2 * suc n ∸ 1 ≡ suc (n + n)
-    oneLess = trans (cong (n Data.Nat.+_) (NP.+-identityʳ (suc n))) (NP.+-suc n n)
+    oneLess = pred-double-suc n
 
 -- The operational exponent is least among every possible integer clearing.
 denominator-minimal : (z : R.DComplex) (m : ℕ) → Clears z m → R.denomexpBy R.OnePlusIBase z ≤ m

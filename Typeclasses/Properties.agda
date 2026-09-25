@@ -158,3 +158,18 @@ module MapPowers {A B : Set} {{sa : SemiRing A}} {{sb : SemiRing B}}
   map-power x (suc n) = trans (cong f (PA.^-suc x n))
     (trans (mul x (x ^ n))
       (trans (cong (f x *_) (map-power x n)) (sym (PB.^-suc (f x) n))))
+
+-- Extend a clearing equation through a multiplicative embedding. Keeping
+-- both carriers abstract prevents inference from unfolding concrete fraction
+-- arithmetic while checking the associativity and embedding steps.
+module MappedActions {A B : Set} {{sa : SemiRing A}} {{sb : SemiRing B}}
+  (f : A → B) (sourcePower : ℕ → A) (targetPower : ℕ → B)
+  (mapPower : ∀ n → f (sourcePower n) ≡ targetPower n)
+  (mapMul : ∀ a b → f (a * b) ≡ f a * f b)
+  (compose : ∀ m n z → targetPower m * (targetPower n * z) ≡ targetPower (m + n) * z) where
+
+  extend-clearing : ∀ m n z a → targetPower n * z ≡ f a →
+    targetPower (m + n) * z ≡ f (sourcePower m * a)
+  extend-clearing m n z a h = trans (sym (compose m n z))
+    (trans (cong (targetPower m *_) h)
+      (trans (cong (_* f a) (sym (mapPower m))) (sym (mapMul (sourcePower m) a))))

@@ -255,6 +255,13 @@ alignment, and the parity test to determine whether one factor cancels.
 redundantly scaled inputs, and proves that selected smaller exponents cannot
 clear any integer numerator; `Everything.agda` includes both modules.
 
+`Typeclasses.Properties.MappedActions` factors the clearing-transport proof
+through abstract source and target carriers. This avoids repeatedly unfolding
+dyadic coordinate arithmetic during proof inference. On the development
+machine with cached dependencies and a 4 GB Agda heap, checking
+`GammaDenominator.agda` took 51.3 s after this refactor versus 161.7 s before.
+This is a module typechecking measurement, not a synthesizer runtime benchmark.
+
 ## Testing
 
 `Test/*.agda` contain checks by evaluation (`refl`); `Test/*Run.agda`
