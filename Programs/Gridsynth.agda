@@ -302,25 +302,31 @@ private
   foldM f b [] = pure b
   foldM f b (x ∷ xs) = f b x >>= λ b' -> foldM f b' xs
 
+  -- The parsed command line, given the result of getOpt. It is taken as
+  -- an ARGUMENT and not scrutinised with "with": a with-abstraction
+  -- normalises its scrutinee, i.e. the whole concrete option table
+  -- "options", which cost 4.3 s of type-checking time.
+  dopts-of : List (Options -> IO Options) × List String × List String -> IO Options
+  dopts-of (o , args , errs) = do
+    opts <- foldM (λ opts f -> f opts) defaultOptions o
+    check-errs errs
+    process-args opts args
+    where
+      check-errs : List String -> IO {0ℓ} ⊤ᵖ
+      check-errs [] = pure ttᵖ
+      check-errs es@(_ ∷ _) = optfail (String.concat es)
+
+      process-args : Options -> List String -> IO Options
+      process-args opts [] = pure opts
+      process-args opts (string ∷ []) with parse-SymReal string
+      ... | just theta = pure (record opts { opt-theta = just theta })
+      ... | nothing = optfail ("Invalid theta -- " ++ string ++ "\n")
+      process-args opts (h1 ∷ h2 ∷ []) = optfail ("Too many non-option arguments -- " ++ h1 ++ ", " ++ h2 ++ "\n")
+      process-args opts (h1 ∷ h2 ∷ _ ∷ _) = optfail ("Too many non-option arguments -- " ++ h1 ++ ", " ++ h2 ++ "...\n")
+
 -- Process argv-style command line options into an Options structure.
 dopts : List String -> IO Options
-dopts argv with getOpt Permute options argv
-... | o , args , errs = do
-  opts <- foldM (λ opts f -> f opts) defaultOptions o
-  check-errs errs
-  process-args opts args
-  where
-    check-errs : List String -> IO {0ℓ} ⊤ᵖ
-    check-errs [] = pure ttᵖ
-    check-errs es@(_ ∷ _) = optfail (String.concat es)
-
-    process-args : Options -> List String -> IO Options
-    process-args opts [] = pure opts
-    process-args opts (string ∷ []) with parse-SymReal string
-    ... | just theta = pure (record opts { opt-theta = just theta })
-    ... | nothing = optfail ("Invalid theta -- " ++ string ++ "\n")
-    process-args opts (h1 ∷ h2 ∷ []) = optfail ("Too many non-option arguments -- " ++ h1 ++ ", " ++ h2 ++ "\n")
-    process-args opts (h1 ∷ h2 ∷ _ ∷ _) = optfail ("Too many non-option arguments -- " ++ h1 ++ ", " ++ h2 ++ "...\n")
+dopts argv = dopts-of (getOpt Permute options argv)
 
 -- ----------------------------------------------------------------------
 -- * Miscellaneous

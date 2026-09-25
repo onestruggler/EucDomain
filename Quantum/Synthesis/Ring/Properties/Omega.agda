@@ -41,6 +41,29 @@ module _ {A : Set} {{RA : Ring A}} (isCR : IsCommutativeRing (_≡_ {A = A}) _+_
     by ρ (Omega a b c d) (Omega a' b' c' d') h₁ h₂ h₃ h₄ =
       cong₄ Omega (prove ρ a a' h₁) (prove ρ b b' h₂) (prove ρ c c' h₃) (prove ρ d d' h₄)
 
+    -- Generic elements of (Polynomial n) [ω], and the corresponding
+    -- environments. Each law below is proved with as many solver
+    -- variables as it has generic elements (four per element), and no
+    -- more: the solver's normal form Normal n is a sparse Horner form
+    -- nested n deep, so its cost grows with the number of variables of
+    -- its TYPE, not with the number of variables that actually occur.
+    -- Using Polynomial 12 for a law about one or two elements (as an
+    -- earlier version did) made this module three times slower.
+    X₁ : Polynomial 4 [ω]
+    X₁ = Omega (var zero) (var (suc zero)) (var (suc (suc zero))) (var (suc (suc (suc zero))))
+
+    ρ₁ : A [ω] -> Vec A 4
+    ρ₁ (Omega a b c d) = a ∷ b ∷ c ∷ d ∷ []
+
+    X₂ Y₂ : Polynomial 8 [ω]
+    X₂ = Omega (var zero) (var (suc zero)) (var (suc (suc zero))) (var (suc (suc (suc zero))))
+    Y₂ = Omega (var (suc (suc (suc (suc zero))))) (var (suc (suc (suc (suc (suc zero))))))
+               (var (suc (suc (suc (suc (suc (suc zero)))))))
+               (var (suc (suc (suc (suc (suc (suc (suc zero))))))))
+
+    ρ₂ : A [ω] -> A [ω] -> Vec A 8
+    ρ₂ (Omega a b c d) (Omega e f g h) = a ∷ b ∷ c ∷ d ∷ e ∷ f ∷ g ∷ h ∷ []
+
     -- Three generic elements of (Polynomial 12) [ω], and the
     -- corresponding environment.
     X Y Z : Polynomial 12 [ω]
@@ -61,22 +84,22 @@ module _ {A : Set} {{RA : Ring A}} (isCR : IsCommutativeRing (_≡_ {A = A}) _+_
   +-assoc-Omega x y z = by (ρ x y z) ((X + Y) + Z) (X + (Y + Z)) refl refl refl refl
 
   +-comm-Omega : ∀ (x y : A [ω]) -> x + y ≡ y + x
-  +-comm-Omega x y = by (ρ x y y) (X + Y) (Y + X) refl refl refl refl
+  +-comm-Omega x y = by (ρ₂ x y) (X₂ + Y₂) (Y₂ + X₂) refl refl refl refl
 
   +-identityˡ-Omega : ∀ (x : A [ω]) -> 0# + x ≡ x
-  +-identityˡ-Omega x = by (ρ x x x) (0# + X) X refl refl refl refl
+  +-identityˡ-Omega x = by (ρ₁ x) (0# + X₁) X₁ refl refl refl refl
 
   -‿inverseˡ-Omega : ∀ (x : A [ω]) -> (- x) + x ≡ 0#
-  -‿inverseˡ-Omega x = by (ρ x x x) ((- X) + X) 0# refl refl refl refl
+  -‿inverseˡ-Omega x = by (ρ₁ x) ((- X₁) + X₁) 0# refl refl refl refl
 
   *-assoc-Omega : ∀ (x y z : A [ω]) -> (x * y) * z ≡ x * (y * z)
   *-assoc-Omega x y z = by (ρ x y z) ((X * Y) * Z) (X * (Y * Z)) refl refl refl refl
 
   *-comm-Omega : ∀ (x y : A [ω]) -> x * y ≡ y * x
-  *-comm-Omega x y = by (ρ x y y) (X * Y) (Y * X) refl refl refl refl
+  *-comm-Omega x y = by (ρ₂ x y) (X₂ * Y₂) (Y₂ * X₂) refl refl refl refl
 
   *-identityˡ-Omega : ∀ (x : A [ω]) -> 1# * x ≡ x
-  *-identityˡ-Omega x = by (ρ x x x) (1# * X) X refl refl refl refl
+  *-identityˡ-Omega x = by (ρ₁ x) (1# * X₁) X₁ refl refl refl refl
 
   distribʳ-Omega : ∀ (x y z : A [ω]) -> (y + z) * x ≡ y * x + z * x
   distribʳ-Omega x y z = by (ρ x y z) ((Y + Z) * X) (Y * X + Z * X) refl refl refl refl
@@ -119,28 +142,28 @@ module _ {A : Set} {{RA : Ring A}} (isCR : IsCommutativeRing (_≡_ {A = A}) _+_
     conj-Omega-isRingEndo : IsRingEndo conj-Omega
     conj-Omega-isRingEndo = record
       { f-+ = λ x y -> trans
-          (cong₄ Omega (cong -_ (f-⟦⟧ (om-c (X + Y)) (ρ x y y))) (cong -_ (f-⟦⟧ (om-b (X + Y)) (ρ x y y)))
-                       (cong -_ (f-⟦⟧ (om-a (X + Y)) (ρ x y y))) (f-⟦⟧ (om-d (X + Y)) (ρ x y y)))
-          (by (map f (ρ x y y)) (adjP (X + Y)) (adjP X + adjP Y) refl refl refl refl)
+          (cong₄ Omega (cong -_ (f-⟦⟧ (om-c (X₂ + Y₂)) (ρ₂ x y))) (cong -_ (f-⟦⟧ (om-b (X₂ + Y₂)) (ρ₂ x y)))
+                       (cong -_ (f-⟦⟧ (om-a (X₂ + Y₂)) (ρ₂ x y))) (f-⟦⟧ (om-d (X₂ + Y₂)) (ρ₂ x y)))
+          (by (map f (ρ₂ x y)) (adjP (X₂ + Y₂)) (adjP X₂ + adjP Y₂) refl refl refl refl)
       ; f-* = λ x y -> trans
-          (cong₄ Omega (cong -_ (f-⟦⟧ (om-c (X * Y)) (ρ x y y))) (cong -_ (f-⟦⟧ (om-b (X * Y)) (ρ x y y)))
-                       (cong -_ (f-⟦⟧ (om-a (X * Y)) (ρ x y y))) (f-⟦⟧ (om-d (X * Y)) (ρ x y y)))
-          (by (map f (ρ x y y)) (adjP (X * Y)) (adjP X * adjP Y) refl refl refl refl)
+          (cong₄ Omega (cong -_ (f-⟦⟧ (om-c (X₂ * Y₂)) (ρ₂ x y))) (cong -_ (f-⟦⟧ (om-b (X₂ * Y₂)) (ρ₂ x y)))
+                       (cong -_ (f-⟦⟧ (om-a (X₂ * Y₂)) (ρ₂ x y))) (f-⟦⟧ (om-d (X₂ * Y₂)) (ρ₂ x y)))
+          (by (map f (ρ₂ x y)) (adjP (X₂ * Y₂)) (adjP X₂ * adjP Y₂) refl refl refl refl)
       ; f-1 = trans (cong₄ Omega (cong -_ f-0) (cong -_ f-0) (cong -_ f-0) f-1)
-                    (by (ρ 0# 0# 0#) (Omega (- 0#) (- 0#) (- 0#) 1#) 1# refl refl refl refl) }
+                    (by [] (Omega (- 0#) (- 0#) (- 0#) 1#) 1# refl refl refl refl) }
 
     conj2-Omega-isRingEndo : IsRingEndo conj2-Omega
     conj2-Omega-isRingEndo = record
       { f-+ = λ x y -> trans
-          (cong₄ Omega (cong -_ (f-⟦⟧ (om-a (X + Y)) (ρ x y y))) (f-⟦⟧ (om-b (X + Y)) (ρ x y y))
-                       (cong -_ (f-⟦⟧ (om-c (X + Y)) (ρ x y y))) (f-⟦⟧ (om-d (X + Y)) (ρ x y y)))
-          (by (map f (ρ x y y)) (adj2P (X + Y)) (adj2P X + adj2P Y) refl refl refl refl)
+          (cong₄ Omega (cong -_ (f-⟦⟧ (om-a (X₂ + Y₂)) (ρ₂ x y))) (f-⟦⟧ (om-b (X₂ + Y₂)) (ρ₂ x y))
+                       (cong -_ (f-⟦⟧ (om-c (X₂ + Y₂)) (ρ₂ x y))) (f-⟦⟧ (om-d (X₂ + Y₂)) (ρ₂ x y)))
+          (by (map f (ρ₂ x y)) (adj2P (X₂ + Y₂)) (adj2P X₂ + adj2P Y₂) refl refl refl refl)
       ; f-* = λ x y -> trans
-          (cong₄ Omega (cong -_ (f-⟦⟧ (om-a (X * Y)) (ρ x y y))) (f-⟦⟧ (om-b (X * Y)) (ρ x y y))
-                       (cong -_ (f-⟦⟧ (om-c (X * Y)) (ρ x y y))) (f-⟦⟧ (om-d (X * Y)) (ρ x y y)))
-          (by (map f (ρ x y y)) (adj2P (X * Y)) (adj2P X * adj2P Y) refl refl refl refl)
+          (cong₄ Omega (cong -_ (f-⟦⟧ (om-a (X₂ * Y₂)) (ρ₂ x y))) (f-⟦⟧ (om-b (X₂ * Y₂)) (ρ₂ x y))
+                       (cong -_ (f-⟦⟧ (om-c (X₂ * Y₂)) (ρ₂ x y))) (f-⟦⟧ (om-d (X₂ * Y₂)) (ρ₂ x y)))
+          (by (map f (ρ₂ x y)) (adj2P (X₂ * Y₂)) (adj2P X₂ * adj2P Y₂) refl refl refl refl)
       ; f-1 = trans (cong₄ Omega (cong -_ f-0) f-0 (cong -_ f-0) f-1)
-                    (by (ρ 0# 0# 0#) (Omega (- 0#) 0# (- 0#) 1#) 1# refl refl refl refl) }
+                    (by [] (Omega (- 0#) 0# (- 0#) 1#) 1# refl refl refl refl) }
 
     module _ (inv : ∀ a -> f (f a) ≡ a) where
       private
