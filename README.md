@@ -271,7 +271,11 @@ associativity, identities and scalar-product rules for rectangular matrices,
 including empty and singleton inner dimensions. `Linear.Conjugate` proves
 adjoint entry formulas, involution and reversal of matrix products from the
 coefficient adjoint automorphism. `Map` lifts a coefficient ring homomorphism
-to preservation of native matrix products and identities.
+to preservation of native matrix products, identities and scalar multiplication.
+When the coefficient map preserves conjugation, it also preserves adjoints and
+row Gram matrices. `Linear.Conjugate.gram-scale` proves the norm factor in a
+scaled Gram matrix. `Linear.Evaluation` proves agreement of a native left fold
+with any semantics satisfying the corresponding identity and product equations.
 
 The generic matrix theory is adapted from the independently developed
 `Kopt.Algebra.Linear` at Kopt revision `a0b62a0`; it has no Kopt dependency.

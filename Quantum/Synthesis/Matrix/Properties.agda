@@ -15,6 +15,7 @@ open import Data.Nat.Base using (ℕ; zero; suc)
 open import Data.Vec.Base as V using (Vec; []; _∷_; lookup)
 import Data.Vec.Functional as VF
 import Data.Vec.Properties as VP
+import Data.List.Base as L
 open import Function.Base using (_∘_)
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
@@ -212,6 +213,24 @@ module Linear {R : Set} {{_ : Ring R}} (isCR : IsCommutativeRing _≡_ _+_ _*_ -
   ·-* : ∀ x y (M : Matrix m n R) (N : Matrix n p R) → (x · M) ·*· (y · N) ≡ (x * y) · (M ·*· N)
   ·-* x y M N = trans (·-*ˡ x M (y · N)) (trans (cong (x ·_) (·-*ʳ y M N)) (·-assoc x y (M ·*· N)))
 
+  -- A native left fold agrees with any reference semantics having the same
+  -- identity and product step. Prove this before specializing the ring or
+  -- expanding a concrete gate's entries.
+  module Evaluation {G : Set} {d : ℕ}
+    (gate : G → Matrix d d R) (semantics : L.List G → Matrix d d R)
+    (base : semantics L.[] ≡ 𝕀)
+    (step : ∀ g c → semantics (g L.∷ c) ≡ gate g ·*· semantics c) where
+
+    fold-correct : ∀ c (A : Matrix d d R) →
+      L.foldl (λ B g → B ·*· gate g) A c ≡ A ·*· semantics c
+    fold-correct L.[] A = sym (trans (cong (A ·*·_) base) (*-identityʳ A))
+    fold-correct (g L.∷ c) A = trans (fold-correct c (A ·*· gate g))
+      (trans (*-assoc A (gate g) (semantics c)) (cong (A ·*·_) (sym (step g c))))
+
+    correct : ∀ c → L.foldl (λ A g → A ·*· gate g) (semantics L.[]) c ≡ semantics c
+    correct c = trans (fold-correct c (semantics L.[]))
+      (trans (cong (_·*· semantics c) base) (*-identityˡ (semantics c)))
+
   ------------------------------------------------------------------------
   -- Adjoints, for an involutive conjugation
 
@@ -251,6 +270,12 @@ module Linear {R : Set} {{_ : Ring R}} (isCR : IsCommutativeRing _≡_ _+_ _*_ -
     †-𝕀 : adjoint (𝕀 {R = R} {n = n}) ≡ 𝕀
     †-𝕀 = ext λ i j → trans (†-! 𝕀 i j) (trans (cong adj (𝕀-! j i)) (trans (adj-δ j i) (trans (δ-sym j i) (sym (𝕀-! i j)))))
 
+    gram : Matrix m n R → Matrix m m R
+    gram M = M ·*· adjoint M
+
+    gram-scale : ∀ x (M : Matrix m n R) → gram (x · M) ≡ (x * adj x) · gram M
+    gram-scale x M = trans (cong ((x · M) ·*·_) (†-· x M)) (·-* x (adj x) M (adjoint M))
+
 -- A coefficient homomorphism preserves native matrix multiplication.
 module Map {A B : Set} {{ra : Ring A}} {{rb : Ring B}}
   (la : IsCommutativeRing (_≡_ {A = A}) _+_ _*_ -_ 0# 1#)
@@ -285,3 +310,25 @@ module Map {A B : Set} {{ra : Ring A}} {{rb : Ring B}}
   map-identity : matrix-map f (𝕀 {R = A} {n = n}) ≡ 𝕀 {R = B}
   map-identity = ext λ i j → trans (map-! f 𝕀 i j)
     (trans (cong f (Source.𝕀-! i j)) (trans (map-delta i j) (sym (Target.𝕀-! i j))))
+
+  map-scale : ∀ x (M : Matrix m n A) → matrix-map f (x scalarmult M) ≡ f x scalarmult matrix-map f M
+  map-scale x M = ext λ i j → trans (map-! f (x scalarmult M) i j)
+    (trans (cong f (Source.·-! x M i j))
+      (trans (F.f-* x (M ⟪ i , j ⟫))
+        (trans (cong (f x *_) (sym (map-! f M i j))) (sym (Target.·-! (f x) (matrix-map f M) i j)))))
+
+  module Conjugate {{aa : Adjoint A}} {{ab : Adjoint B}}
+    (aAdj : IsInvolutiveRingEndo {A} adj) (bAdj : IsInvolutiveRingEndo {B} adj)
+    (mapAdj : ∀ x → f (adj x) ≡ adj (f x)) where
+    private
+      module SA = Source.Conjugate aAdj
+      module TA = Target.Conjugate bAdj
+
+    map-adjoint : ∀ (M : Matrix m n A) → matrix-map f (adjoint M) ≡ adjoint (matrix-map f M)
+    map-adjoint M = ext λ i j → trans (map-! f (adjoint M) i j)
+      (trans (cong f (SA.†-! M i j))
+        (trans (mapAdj (M ⟪ j , i ⟫))
+          (trans (cong adj (sym (map-! f M j i))) (sym (TA.†-! (matrix-map f M) i j)))))
+
+    map-gram : ∀ (M : Matrix m n A) → matrix-map f (SA.gram M) ≡ TA.gram (matrix-map f M)
+    map-gram M = trans (map-product M (adjoint M)) (cong (matrix-map f M ·*·_) (map-adjoint M))
