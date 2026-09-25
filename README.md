@@ -7,7 +7,21 @@ Clifford+T quantum circuits), built on a common ring framework that
 overloads operators and constants with instance arguments.
 
 Requires Agda 2.8.0 and the Agda standard library 2.4 (see
-`EucDomain.agda-lib`). `agda Everything.agda` type checks everything.
+`EucDomain.agda-lib`). `agda Everything.agda` type checks everything;
+give it a large enough heap (`agda +RTS -M6G -RTS Everything.agda`),
+since one process holds every module and interface at once.
+
+Note on type-checking cost: what is expensive in this development is
+deciding that two *different expressions* denote the same *concrete*
+value of 𝔻[i] or of a matrix over it (`Matrix`, `_[i]_` and `Dyadic`
+are all eta records, so even variables expand into projections). The
+arithmetic itself is cheap. Proofs are therefore written over
+variables, with the equations that a conversion would otherwise have to
+find passed in as hypotheses and matched against `refl`; note that
+`1#` counts as a concrete constant for this purpose. Exhaustive checks
+compare symbolic data proved correct once, rather than matrices. These
+two rules took the slowest modules from 45 minutes to 10 minutes in
+total.
 
 ## Contents
 

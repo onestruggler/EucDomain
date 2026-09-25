@@ -9,7 +9,8 @@ module Test.DiophantineRun where
 open import IO using (Main ; run ; putStrLn ; _>>_ ; _>>=_)
 import IO.Handle
 open import Data.Bool.Base using (Bool ; true ; false ; _∧_ ; if_then_else_)
-open import Data.List.Base using (List ; [] ; _∷_ ; map ; foldr ; and ; zipWith ; length)
+open import Data.List.Base using (List ; [] ; _∷_ ; map ; foldr ; zipWith ; length)
+open import Data.Bool.ListAction using (and)
 open import Data.Maybe.Base using (Maybe ; just ; nothing)
 open import Data.Nat.Base using (ℕ)
 import Data.Nat.Show as NatS
