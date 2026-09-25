@@ -128,3 +128,10 @@ unit-product u v hu hv = trans (cong ((u * v) *_) (conj-mul u v))
 unit-unscale : ∀ u x → Unit u → TC.adj u * (u * x) ≡ x
 unit-unscale u x hu = trans (sym (*-assoc (TC.adj u) u x))
   (trans (cong (_* x) (trans (*-comm (TC.adj u) u) hu)) (*-identityˡ x))
+
+unit-conjugate : ∀ u → Unit u → Unit (TC.adj u)
+unit-conjugate u h = trans (cong (TC.adj u *_) (conj-involutive u)) (trans (*-comm (TC.adj u) u) h)
+
+unscale-zero : ∀ u x → Unit u → u * x ≡ 0# → x ≡ 0#
+unscale-zero u x hu hz = trans (sym (unit-unscale u x hu))
+  (trans (cong (TC.adj u *_) hz) (CommutativeRing.zeroʳ gaussianRing (TC.adj u)))

@@ -7,10 +7,12 @@ open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
 open import GauInt.Gamma using (Evenγ)
+open import GauInt.TwoPower using (twoPower; twoPowerInt; twoPower-lift)
 open import Integer.Parity
 open import Integer.Congruence
 open import Integer.Residues using (four-to-two)
 open import Integer.Parity using (parity-congruent)
+open import Data.Nat using (suc)
 open import Data.Integer using (ℤ; +_; _/ℕ_)
 import Data.Integer as Z
 import Data.Integer.Properties as ZP
@@ -57,3 +59,10 @@ even-norm-divisible (Cplx a b) h = equal-parities-even a b equal
 
 norm-product-real : ∀ z → re (z * TC.adj z) ≡ TC.norm z
 norm-product-real (Cplx a b) = solve 2 (λ a b → a :* a :- b :* (:- b) := a :* a :+ b :* b) refl a b
+
+positive-scalar-even : ∀ z n → z * TC.adj z ≡ twoPower (suc n) → Evenγ z
+positive-scalar-even z n h = even-norm-divisible z (twoPowerInt n , trans hn
+  (sym (ZP.+-identityˡ ((+ 2) Z.* twoPowerInt n))))
+  where
+  hn : TC.norm z ≡ (+ 2) Z.* twoPowerInt n
+  hn = trans (sym (norm-product-real z)) (cong re (trans h (twoPower-lift (suc n))))

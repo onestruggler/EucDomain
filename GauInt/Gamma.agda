@@ -50,6 +50,9 @@ powγ-add m zero = trans (cong powγ (NP.+-identityʳ m)) (sym (*-identityʳ (po
 powγ-add m (suc n) = trans (cong powγ (NP.+-suc m n))
   (trans (cong (_* γ) (powγ-add m n)) (*-assoc (powγ m) (powγ n) γ))
 
+powγ-double : ∀ k → powγ (2 * k) ≡ powγ k * powγ k
+powγ-double k = trans (cong powγ (cong (k TC.+_) (NP.+-identityʳ k))) (powγ-add k k)
+
 recover-re : ∀ a b → (a Z.- b) Z.+ (a Z.+ b) ≡ (+ 2) Z.* a
 recover-re = solve 2 (λ a b → (a :- b) :+ (a :+ b) := con (+ 2) :* a) refl
 
