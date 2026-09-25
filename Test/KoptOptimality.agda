@@ -6,7 +6,7 @@
 -- themselves, where the type checker runs them and where they are used
 -- to prove the corresponding statements.
 --
---   * gp-check-all (Kopt.Optimality): each of the 24·256 = 6144
+--   * gperm-of-gp-data (Kopt.GPData): each of the 24·256 = 6144
 --     generalized permutations is implementable by at most 9 gates, at
 --     most one CS gate and no K gate.
 --   * inv-perm-ok, v3-ok, v4-ok, v6-ok (Kopt.NormalForms): the

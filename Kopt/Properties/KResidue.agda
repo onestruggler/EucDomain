@@ -29,6 +29,7 @@ open import Kopt.Properties.DyadicTools
 open import Kopt.Properties.Residue
 open import Kopt.Properties.KAction
 open import Kopt.Properties.Lde
+open import Kopt.Properties.LdeVars
 open import Kopt.Properties.LdeLemmas
 
 private
@@ -45,45 +46,32 @@ private
 K-pair : DComplex -> DComplex -> DComplex × DComplex
 K-pair x y = ((x + y) * invγ , (x - y) * invγ)
 
-private
-  -- These are stated with a variable V, so that type checking never
-  -- unfolds the 𝔻[i] products they contain.
-  γ-invγ-elim : ∀ (z : DComplex) -> (γ * z) * invγ ≡ z
-  γ-invγ-elim z = trans (DL.swapʳ γ z invγ) (trans (cong (λ w -> w * z) γ-invγ) (DR.*-identityˡ z))
-
-  invγ-γ-elim : ∀ (z : DComplex) -> z * (invγ * γ) ≡ z
-  invγ-γ-elim z = trans (cong (λ w -> z * w) invγ-γ) (DR.*-identityʳ z)
+-- The four chains below are the lemmas whole-div-+, whole-div-minus,
+-- whole-up-+ and whole-up-minus of Kopt.Properties.LdeVars, which are
+-- proved over VARIABLES g (for γ), u (for 1/γ), p (for γ↑l) and q
+-- (for γ↑(l+1)). Here they are used at the concrete constants by pure
+-- instantiation: the conclusion of the instantiated lemma is
+-- syntactically the goal, and the hypotheses are from-whole-γ, γ-invγ
+-- / invγ-γ and ↑-suc. Written out as reasoning chains at the
+-- concrete constants (as they were), the four of them cost 705 s of
+-- type checking, because every step converts two different
+-- expressions denoting the same element of 𝔻[i], which unfolds the
+-- whole dyadic arithmetic; this way they cost 66 s, of which 57 s is
+-- the residual cost of the two whose statement contains γ↑(l+1) =
+-- γ·γ↑l -- a product that reduces -- rather than the stuck γ↑l.
 
 -- γˡ((x+y)/γ) = V when X = γˡx, Y = γˡy and X + Y = γV.
 K-whole-gen : ∀ (l : ℕ) (x y : DComplex) (X Y V : ZComplex) ->
               x * (γ ↑ l) ≡ from-whole X -> y * (γ ↑ l) ≡ from-whole Y -> X + Y ≡ γ * V ->
               ((x + y) * invγ) * (γ ↑ l) ≡ from-whole V
-K-whole-gen l x y X Y V hx hy e = begin
-  ((x + y) * invγ) * (γ ↑ l)             ≡⟨ trans (DL.swapʳ (x + y) invγ (γ ↑ l))
-                                              (cong (λ z -> z * invγ) (DR.distribʳ (γ ↑ l) x y)) ⟩
-  ((x * (γ ↑ l)) + (y * (γ ↑ l))) * invγ ≡⟨ cong (λ z -> z * invγ) (cong₂ (λ u v -> u + v) hx hy) ⟩
-  (from-whole X + from-whole Y) * invγ   ≡⟨ cong (λ z -> z * invγ) (sym (from-whole-+ X Y)) ⟩
-  from-whole (X + Y) * invγ              ≡⟨ cong (λ z -> from-whole z * invγ) e ⟩
-  from-whole (γ * V) * invγ              ≡⟨ cong (λ z -> z * invγ) (from-whole-* γ V) ⟩
-  (from-whole γ * from-whole V) * invγ   ≡⟨ cong (λ z -> (z * from-whole V) * invγ) from-whole-γ ⟩
-  (γ * from-whole V) * invγ              ≡⟨ γ-invγ-elim (from-whole V) ⟩
-  from-whole V                           ∎
-  where open ≡-Reasoning
+K-whole-gen l x y X Y V hx hy e =
+  whole-div-+ x y invγ γ (γ ↑ l) γ X Y V from-whole-γ γ-invγ hx hy e
 
 K-whole-gen' : ∀ (l : ℕ) (x y : DComplex) (X Y V : ZComplex) ->
                x * (γ ↑ l) ≡ from-whole X -> y * (γ ↑ l) ≡ from-whole Y -> X - Y ≡ γ * V ->
                ((x - y) * invγ) * (γ ↑ l) ≡ from-whole V
-K-whole-gen' l x y X Y V hx hy e = begin
-  ((x - y) * invγ) * (γ ↑ l)             ≡⟨ trans (DL.swapʳ (x - y) invγ (γ ↑ l))
-                                              (cong (λ z -> z * invγ) (DL.minus-distribʳ x y (γ ↑ l))) ⟩
-  ((x * (γ ↑ l)) - (y * (γ ↑ l))) * invγ ≡⟨ cong (λ z -> z * invγ) (cong₂ (λ u v -> u - v) hx hy) ⟩
-  (from-whole X - from-whole Y) * invγ   ≡⟨ cong (λ z -> z * invγ) (sym (from-whole-minus X Y)) ⟩
-  from-whole (X - Y) * invγ              ≡⟨ cong (λ z -> from-whole z * invγ) e ⟩
-  from-whole (γ * V) * invγ              ≡⟨ cong (λ z -> z * invγ) (from-whole-* γ V) ⟩
-  (from-whole γ * from-whole V) * invγ   ≡⟨ cong (λ z -> (z * from-whole V) * invγ) from-whole-γ ⟩
-  (γ * from-whole V) * invγ              ≡⟨ γ-invγ-elim (from-whole V) ⟩
-  from-whole V                           ∎
-  where open ≡-Reasoning
+K-whole-gen' l x y X Y V hx hy e =
+  whole-div-minus x y invγ γ (γ ↑ l) γ X Y V from-whole-γ γ-invγ hx hy e
 
 -- γˡ((x+y)/γ) = (X+Y)/γ when X = γˡx and Y = γˡy are integral and
 -- X + Y is even.
@@ -102,25 +90,13 @@ K-whole' l x y X Y hx hy pe =
 -- When the lde increases, the relevant level is l+1: γˡ⁺¹((x±y)/γ) = X±Y.
 K-whole-up : ∀ (l : ℕ) (x y : DComplex) (X Y : ZComplex) -> x * (γ ↑ l) ≡ from-whole X -> y * (γ ↑ l) ≡ from-whole Y ->
              ((x + y) * invγ) * (γ ↑ suc l) ≡ from-whole (X + Y)
-K-whole-up l x y X Y hx hy = begin
-  ((x + y) * invγ) * (γ * (γ ↑ l))              ≡⟨ trans (DL.interchange2 (x + y) invγ γ (γ ↑ l))
-                                                     (cong (λ z -> z * (invγ * γ)) (DR.distribʳ (γ ↑ l) x y)) ⟩
-  ((x * (γ ↑ l)) + (y * (γ ↑ l))) * (invγ * γ)  ≡⟨ invγ-γ-elim ((x * (γ ↑ l)) + (y * (γ ↑ l))) ⟩
-  (x * (γ ↑ l)) + (y * (γ ↑ l))                 ≡⟨ cong₂ (λ u v -> u + v) hx hy ⟩
-  from-whole X + from-whole Y                   ≡⟨ sym (from-whole-+ X Y) ⟩
-  from-whole (X + Y)                            ∎
-  where open ≡-Reasoning
+K-whole-up l x y X Y hx hy =
+  whole-up-+ x y invγ γ (γ ↑ l) (γ ↑ suc l) X Y invγ-γ (↑-suc γ l) hx hy
 
 K-whole-up' : ∀ (l : ℕ) (x y : DComplex) (X Y : ZComplex) -> x * (γ ↑ l) ≡ from-whole X -> y * (γ ↑ l) ≡ from-whole Y ->
               ((x - y) * invγ) * (γ ↑ suc l) ≡ from-whole (X - Y)
-K-whole-up' l x y X Y hx hy = begin
-  ((x - y) * invγ) * (γ * (γ ↑ l))              ≡⟨ trans (DL.interchange2 (x - y) invγ γ (γ ↑ l))
-                                                     (cong (λ z -> z * (invγ * γ)) (DL.minus-distribʳ x y (γ ↑ l))) ⟩
-  ((x * (γ ↑ l)) - (y * (γ ↑ l))) * (invγ * γ)  ≡⟨ invγ-γ-elim ((x * (γ ↑ l)) - (y * (γ ↑ l))) ⟩
-  (x * (γ ↑ l)) - (y * (γ ↑ l))                 ≡⟨ cong₂ (λ u v -> u - v) hx hy ⟩
-  from-whole X - from-whole Y                   ≡⟨ sym (from-whole-minus X Y) ⟩
-  from-whole (X - Y)                            ∎
-  where open ≡-Reasoning
+K-whole-up' l x y X Y hx hy =
+  whole-up-minus x y invγ γ (γ ↑ l) (γ ↑ suc l) X Y invγ-γ (↑-suc γ l) hx hy
 
 -- ----------------------------------------------------------------------
 -- * The four cases of Section II C, for x, y ∈ 𝔻[i]

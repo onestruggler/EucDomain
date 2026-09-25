@@ -269,6 +269,70 @@ private
   invγ-γ : invγ * γ ≡ 1#
   invγ-γ = refl
 
+  γ-invγ : (γ {DComplex}) * invγ ≡ 1#
+  γ-invγ = refl
+
+-- ----------------------------------------------------------------------
+-- * Denominators, over variables
+--
+-- These are the first of the lemmas that Kopt.Properties.LdeVars
+-- explains and continues: 𝔻[i] equations stated over VARIABLES g (for
+-- γ), u (for 1/γ), p (for γ↑l) and q (for γ↑(l+1)), with every
+-- equation that a reasoning chain would otherwise obtain by
+-- *conversion* turned into a hypothesis matched against refl. The
+-- conversion checker must never be asked to decide that two different
+-- expressions denote the same concrete element of 𝔻[i] (Dyadic and
+-- _[i]_ are records with eta, so such a decision unfolds the whole
+-- dyadic arithmetic); at the use sites below, the conclusion of the
+-- instantiated lemma is syntactically the goal, so no conversion
+-- happens there either. They live in this module, rather than in
+-- Kopt.Properties.LdeVars, because this module needs them too and is
+-- below it in the import order.
+
+-- x↑(n+1) = x·x↑n. For a variable base this is refl, so instantiating
+-- it at γ is instantiation and not conversion.
+↑-suc : ∀ (g : DComplex) (n : ℕ) -> g ↑ suc n ≡ g * (g ↑ n)
+↑-suc g n = refl
+
+-- (g·z)/g = z and z·(g/g) = z, for a right or left inverse of g.
+unit-elimʳ : ∀ (g u z : DComplex) -> g * u ≡ 1# -> (g * z) * u ≡ z
+unit-elimʳ g u z e =
+  trans (DL.swapʳ g z u) (trans (cong (λ w -> w * z) e) (DR.*-identityˡ z))
+
+unit-elimˡ : ∀ (g u z : DComplex) -> u * g ≡ 1# -> z * (u * g) ≡ z
+unit-elimˡ g u z e = trans (cong (λ w -> z * w) e) (DR.*-identityʳ z)
+
+-- One more factor of g in the denominator: t·q is gz·z when t·p is z.
+whole-suc : ∀ (t g p q : DComplex) (gz z : ZComplex) ->
+            (DComplex ∋ from-whole gz) ≡ g -> q ≡ g * p ->
+            t * p ≡ from-whole z -> t * q ≡ from-whole (gz * z)
+whole-suc t g p q gz z hgz refl h = begin
+  t * (g * p)                   ≡⟨ DL.assoc-swap t g p ⟩
+  (t * p) * g                   ≡⟨ cong (λ w -> w * g) h ⟩
+  from-whole z * g              ≡⟨ cong (λ w -> from-whole z * w) (sym hgz) ⟩
+  from-whole z * from-whole gz  ≡⟨ sym (from-whole-* z gz) ⟩
+  from-whole (z * gz)           ≡⟨ cong (λ w -> DComplex ∋ from-whole w) (ZR.*-comm z gz) ⟩
+  from-whole (gz * z)           ∎
+  where open ≡-Reasoning
+
+-- One fewer: if t·q is the *even* Gaussian integer gz·y, then t·p is
+-- already y. (The chain multiplies by u on the right throughout. The
+-- more obvious form, which rewrites 1# into u·g on the left, has a
+-- concrete 1# -- an element of 𝔻[i] -- next to the variables in every
+-- step, and that alone costs 295 s of type checking instead of 6 s.)
+whole-pred : ∀ (t u g p q : DComplex) (gz y : ZComplex) ->
+             (DComplex ∋ from-whole gz) ≡ g -> g * u ≡ 1# -> q ≡ g * p ->
+             t * q ≡ from-whole (gz * y) -> t * p ≡ from-whole y
+whole-pred t u g p q gz y hgz gu refl h = begin
+  t * p                               ≡⟨ sym (unit-elimʳ g u (t * p) gu) ⟩
+  (g * (t * p)) * u                   ≡⟨ cong (λ z -> z * u) (DL.swapˡ g t p) ⟩
+  (t * (g * p)) * u                   ≡⟨ cong (λ z -> z * u) h ⟩
+  from-whole (gz * y) * u             ≡⟨ cong (λ z -> z * u) (from-whole-* gz y) ⟩
+  (from-whole gz * from-whole y) * u  ≡⟨ cong (λ z -> (z * from-whole y) * u) hgz ⟩
+  (g * from-whole y) * u              ≡⟨ unit-elimʳ g u (from-whole y) gu ⟩
+  from-whole y                        ∎
+  where open ≡-Reasoning
+
 -- γ can be cancelled in 𝔻[i] (it is invertible there).
 γ-cancelˡ : ∀ (x y : DComplex) -> γ * x ≡ γ * y -> x ≡ y
 γ-cancelˡ x y e = begin
@@ -346,15 +410,8 @@ open DenomExpγ public
 
 -- Denominator exponents are closed upwards.
 DenomExpγ-suc : ∀ (k : ℕ) (t : DComplex) -> DenomExpγ k t -> DenomExpγ (suc k) t
-DenomExpγ-suc k t (denom-exp z h) = denom-exp (γ * z) (begin
-  t * (γ * (γ ↑ k))            ≡⟨ DL.assoc-swap t γ (γ ↑ k) ⟩
-  (t * (γ ↑ k)) * γ            ≡⟨ cong (λ w -> w * γ) h ⟩
-  from-whole z * γ             ≡⟨ cong (λ w -> from-whole z * w) (sym from-whole-γ) ⟩
-  from-whole z * from-whole γ  ≡⟨ sym (from-whole-* z γ) ⟩
-  from-whole (z * γ)           ≡⟨ cong (λ w -> DComplex ∋ from-whole w) (ZR.*-comm z γ) ⟩
-  from-whole (γ * z)           ∎)
-  where
-    open ≡-Reasoning
+DenomExpγ-suc k t (denom-exp z h) =
+  denom-exp (γ * z) (whole-suc t γ (γ ↑ k) (γ ↑ suc k) γ z from-whole-γ (↑-suc γ k) h)
 
 DenomExpγ-≤′ : ∀ {j k : ℕ} {t : DComplex} -> j Nat.≤′ k -> DenomExpγ j t -> DenomExpγ k t
 DenomExpγ-≤′ Nat.≤′-refl h = h
@@ -550,14 +607,10 @@ module _ (a : ℤ) (k : ℕ) (b : ℤ) (l : ℕ) (c : T (Canonical a k)) (d : T 
       integral = subst (λ n -> t * (γ ↑ n) ≡ from-whole V) (sym halved) step
         where
           step : t * (γ ↑ (m Nat.+ m')) ≡ from-whole V
-          step = γ-cancelˡ (t * (γ ↑ (m Nat.+ m'))) (from-whole V) (begin
-            γ * (t * (γ ↑ (m Nat.+ m')))    ≡⟨ DL.swapˡ γ t (γ ↑ (m Nat.+ m')) ⟩
-            t * (γ * (γ ↑ (m Nat.+ m')))    ≡⟨ cong (λ z -> t * (γ ↑ z)) (sym mm) ⟩
-            t * (γ ↑ (m Nat.+ m))           ≡⟨ t-γ ⟩
-            from-whole W                    ≡⟨ cong (λ z -> DComplex ∋ from-whole z) (sym γV) ⟩
-            from-whole (γ * V)              ≡⟨ from-whole-* γ V ⟩
-            from-whole γ * from-whole V     ≡⟨ cong (λ z -> z * from-whole V) from-whole-γ ⟩
-            γ * from-whole V                ∎)
+          step = whole-pred t invγ γ (γ ↑ (m Nat.+ m')) (γ ↑ (m Nat.+ m)) γ V
+                            from-whole-γ γ-invγ
+                            (trans (cong (λ n -> (γ {DComplex}) ↑ n) mm) (↑-suc γ (m Nat.+ m')))
+                            (trans t-γ (cong (λ z -> DComplex ∋ from-whole z) (sym γV)))
 
       both-even : ∀ j -> DenomExpγ j t -> j Nat.< (m Nat.+ m') -> (evenℤ A ≡ true) × (evenℤ B ≡ true)
       both-even j hj j< = even-of-2* A B (((- i) ↑ m) * (i * (proj₁ divW * (γ ↑ r)))) Zeq

@@ -18,9 +18,11 @@
 --    implementable by at most 9 gates, at most one CS gate and no K
 --    gate" is a decidable exhaustive check over the explicit list of
 --    the 24·256 = 6144 generalized permutations, which the type
---    checker runs (gp-check-all). Together with the fact that every
---    generalized permutation occurs in that list (which is proved),
---    this is a proof.
+--    checker runs (gperm-of-gp-data of Kopt.GPData, on the
+--    permutation/phase data of Kopt.Descent rather than on the
+--    matrices). Together with the fact that every generalized
+--    permutation occurs in that list (which is proved), this is a
+--    proof.
 --
 --  * The lower bound kc(A)/2 - 1 ≤ cs(A) of Theorem V.9 is proved
 --    from the hypothesis CliffordK2 ("every two-qubit Clifford
@@ -37,8 +39,8 @@
 --     - Kopt.NormalForms contains the residue-level content of Lemmas
 --       V.3, V.4 and V.6 -- the finite enumerations that the paper's
 --       proofs run -- as exhaustive checks that the type checker runs,
---       in the style of gp-check-all below. What is missing to obtain
---       the operator-level statements is the step from an operator to
+--       in the style of that check. What is missing to obtain the
+--       operator-level statements is the step from an operator to
 --       its residue data (the correctness of lemma-six and refine,
 --       which is checked by execution on the authors' data set), so
 --       Lemma-V-3, Lemma-V-4 and Lemma-V-6 remain hypotheses.
@@ -78,6 +80,12 @@ open import Kopt.Patterns using (SixCases ; I ; II ; III ; IV ; IVt ; V ; VI ; p
 open import Kopt.Synth using (prkc ; synth)
 open import Kopt.Properties.LdeLemmas using (lemma-II-8 ; lde-+ ; max-≤ˡ ; max-≤ʳ ; max-lub)
 open import Kopt.Descent
+open import Kopt.GPData
+
+-- The boolean helpers and the generalized permutations of the gates
+-- are in Kopt.GPData (Kopt.SynthProperties needs them too); they are
+-- re-exported here, where they used to be defined.
+open Kopt.GPData public using (==⇒≡ ; ≤ᵇ⇒≤ ; ≡ᵇ⇒≡ ; gate-gp? ; gp-of-gate ; gate-gp-ok)
 
 -- ----------------------------------------------------------------------
 -- * Booleans as propositions
@@ -85,18 +93,6 @@ open import Kopt.Descent
 private
   false≢true : false ≡ true -> ⊥
   false≢true ()
-
--- A boolean equality test that succeeds is an equality.
-==⇒≡ : {A : Set} {{_ : DecEq A}} {x y : A} -> (x == y) ≡ true -> x ≡ y
-==⇒≡ {x = x} {y} e with x ≟ y
-... | yes p = p
-... | no _ = ⊥-elim (false≢true e)
-
-≤ᵇ⇒≤ : {m n : ℕ} -> (m Nat.≤ᵇ n) ≡ true -> m Nat.≤ n
-≤ᵇ⇒≤ {m} {n} e = NatP.≤ᵇ⇒≤ m n (subst T (sym e) tt)
-
-≡ᵇ⇒≡ : {m n : ℕ} -> (m Nat.≡ᵇ n) ≡ true -> m ≡ n
-≡ᵇ⇒≡ {m} {n} e = NatP.≡ᵇ⇒≡ m n (subst T (sym e) tt)
 
 -- ----------------------------------------------------------------------
 -- * The gate counts of a concatenation
@@ -285,49 +281,9 @@ abstract
 
 -- ----------------------------------------------------------------------
 -- * The gates that are generalized permutations
-
--- Which gates are generalized permutations: all of 𝒢 except K₀ and
--- K₁ (and the derived gates CK and KC, which contain a K).
-gate-gp? : Gate -> Bool
-gate-gp? K₀ = false
-gate-gp? K₁ = false
-gate-gp? CK = false
-gate-gp? KC = false
-gate-gp? _ = true
-
-gp-of-gate : Gate -> GP
-gp-of-gate X₀ = gperm (p2 , p3 , p0 , p1) (ph0 , ph0 , ph0 , ph0) refl
-gp-of-gate X₁ = gperm (p1 , p0 , p3 , p2) (ph0 , ph0 , ph0 , ph0) refl
-gp-of-gate Z₀ = gperm id4p (ph0 , ph0 , ph2 , ph2) refl
-gp-of-gate Z₁ = gperm id4p (ph0 , ph2 , ph0 , ph2) refl
-gp-of-gate S₀ = gperm id4p (ph0 , ph0 , ph1 , ph1) refl
-gp-of-gate S₁ = gperm id4p (ph0 , ph1 , ph0 , ph1) refl
-gp-of-gate CZ = gperm id4p (ph0 , ph0 , ph0 , ph2) refl
-gp-of-gate CS = gperm id4p (ph0 , ph0 , ph0 , ph1) refl
-gp-of-gate CX = gperm (p0 , p1 , p3 , p2) (ph0 , ph0 , ph0 , ph0) refl
-gp-of-gate XC = gperm (p0 , p3 , p2 , p1) (ph0 , ph0 , ph0 , ph0) refl
-gp-of-gate Ex = gperm (p0 , p2 , p1 , p3) (ph0 , ph0 , ph0 , ph0) refl
-gp-of-gate Ii = gperm id4p (ph1 , ph1 , ph1 , ph1) refl
-gp-of-gate _ = gp-one
-
--- Every gate of 𝒢 except K₀ and K₁ is a generalized permutation.
-gate-gp-ok : (g : Gate) -> gate-gp? g ≡ true -> ⟦ g ⟧g ≡ gp-mat (gp-of-gate g)
-gate-gp-ok K₀ ()
-gate-gp-ok K₁ ()
-gate-gp-ok CK ()
-gate-gp-ok KC ()
-gate-gp-ok X₀ _ = ==⇒≡ refl
-gate-gp-ok X₁ _ = ==⇒≡ refl
-gate-gp-ok Z₀ _ = ==⇒≡ refl
-gate-gp-ok Z₁ _ = ==⇒≡ refl
-gate-gp-ok S₀ _ = ==⇒≡ refl
-gate-gp-ok S₁ _ = ==⇒≡ refl
-gate-gp-ok CZ _ = ==⇒≡ refl
-gate-gp-ok CS _ = ==⇒≡ refl
-gate-gp-ok CX _ = ==⇒≡ refl
-gate-gp-ok XC _ = ==⇒≡ refl
-gate-gp-ok Ex _ = ==⇒≡ refl
-gate-gp-ok Ii _ = ==⇒≡ refl
+--
+-- gate-gp?, gp-of-gate and gate-gp-ok are in Kopt.GPData and
+-- re-exported above.
 
 -- Remark II.10, second half: K is the only gate that changes the lde.
 remark-II-10-gate : (g : Gate) -> gate-gp? g ≡ true -> (A : Op) -> lde (⟦ g ⟧g * A) ≡ lde A
@@ -373,38 +329,39 @@ remark-II-10 c h A = trans (cong (λ m -> lde (m * A)) (proj₂ (kfree-gp c h)))
 --
 -- Section III C: a generalized permutation is implementable by at
 -- most 9 gates, at most one CS gate and no K gate. Kopt.Permutations
--- computes such a circuit (gperm-of); the following exhaustive check
--- over the explicit list of the 24·256 = 6144 generalized
--- permutations verifies all four properties at once. Since every
--- generalized permutation occurs in that list (∈-all-perm4 and
--- ∈-all-phase4 of Kopt.Descent), this is a proof of the general
--- statement.
+-- computes such a circuit (gperm-of); the exhaustive check over the
+-- explicit list of the 24·256 = 6144 generalized permutations
+-- verifies all five properties at once. Since every generalized
+-- permutation occurs in that list (∈-all-perm4 and ∈-all-phase4 of
+-- Kopt.Descent), this is a proof of the general statement.
+--
+-- The check itself is gperm-of-gp-data of Kopt.GPData, where it is
+-- run on the permutation/phase data of a generalized permutation
+-- instead of on 4×4 matrices over 𝔻[i] (which cost 291 s of type
+-- checking here).
 
 private
   circuit-or-nil : Maybe Circuit -> Circuit
   circuit-or-nil (just c) = c
   circuit-or-nil nothing = []
 
-  gp-ok : Circuit -> Op -> Bool
-  gp-ok c m = (⟦ c ⟧ == m) ∧ (rlen c Nat.≤ᵇ 9) ∧ (kc c Nat.≡ᵇ 0) ∧ (csc c Nat.≤ᵇ 1) ∧ over-𝒢ᵇ c
-
-  gp-go : Op -> Maybe Circuit -> Bool
-  gp-go m nothing = false
-  gp-go m (just c) = gp-ok c m
-
-  gp-check : Pos4 × Phase4 -> Bool
-  gp-check (t , e) = gp-go (gp-mat-of t e) (gperm-of (gp-mat-of t e))
-
-  -- The exhaustive check: 6144 generalized permutations.
-  gp-check-all : all-of gp-check (pairs all-perm4 all-phase4) ≡ true
-  gp-check-all = refl
-
-  gp-go-nil : (m : Op) (mc : Maybe Circuit) -> gp-go m mc ≡ true -> gp-ok (circuit-or-nil mc) m ≡ true
-  gp-go-nil m (just c) e = e
-
 -- The canonical circuit of a generalized permutation.
 gp-circuit : GP -> Circuit
 gp-circuit G = circuit-or-nil (gperm-of (gp-mat G))
+
+private
+  -- The circuit gperm-of returns is the one gp-circuit names: the
+  -- equation gperm-of (gp-mat G) ≡ just c is a hypothesis matched
+  -- against refl, so no matrix is ever converted here.
+  gp-circuit-props : (G : GP) (c : Circuit) -> gperm-of (gp-mat G) ≡ just c ->
+                     GPProps (gp-mat G) c -> GPProps (gp-mat G) (gp-circuit G)
+  gp-circuit-props G c eq props =
+    subst (λ d -> GPProps (gp-mat G) d) (sym (cong circuit-or-nil eq)) props
+
+  gp-circuit-ok' : (G : GP) ->
+                   Σ[ c ∈ Circuit ] ((gperm-of (gp-mat G) ≡ just c) × GPProps (gp-mat G) c) ->
+                   GPProps (gp-mat G) (gp-circuit G)
+  gp-circuit-ok' G (c , eq , props) = gp-circuit-props G c eq props
 
 -- Section III C, verified by the exhaustive check: gp-circuit G
 -- implements G exactly, with at most 9 gates, no K gate and at most
@@ -412,19 +369,7 @@ gp-circuit G = circuit-or-nil (gperm-of (gp-mat G))
 gp-circuit-ok : (G : GP) ->
                 (⟦ gp-circuit G ⟧ ≡ gp-mat G) × (rlen (gp-circuit G) Nat.≤ 9) ×
                 (kc (gp-circuit G) ≡ 0) × (csc (gp-circuit G) Nat.≤ 1) × Over𝒢 (gp-circuit G)
-gp-circuit-ok G = ==⇒≡ (proj₁ parts) , ≤ᵇ⇒≤ (proj₁ (proj₂ parts)) ,
-                  ≡ᵇ⇒≡ (proj₁ (proj₂ (proj₂ parts))) ,
-                  ≤ᵇ⇒≤ (proj₁ (proj₂ (proj₂ (proj₂ parts)))) ,
-                  proj₂ (proj₂ (proj₂ (proj₂ parts)))
-  where
-    chk : gp-ok (gp-circuit G) (gp-mat G) ≡ true
-    chk = gp-go-nil (gp-mat G) (gperm-of (gp-mat G))
-            (all-of-∈ gp-check (pairs all-perm4 all-phase4) gp-check-all
-              (∈-pairs (∈-all-perm4 (gp-pos G) (gp-distinct G)) (∈-all-phase4 (gp-ph G))))
-    parts : ((⟦ gp-circuit G ⟧ == gp-mat G) ≡ true) × ((rlen (gp-circuit G) Nat.≤ᵇ 9) ≡ true) ×
-            ((kc (gp-circuit G) Nat.≡ᵇ 0) ≡ true) × ((csc (gp-circuit G) Nat.≤ᵇ 1) ≡ true) ×
-            (over-𝒢ᵇ (gp-circuit G) ≡ true)
-    parts = ∧-true₅ chk
+gp-circuit-ok G = gp-circuit-ok' G (gperm-of-gp-data G)
 
 -- ----------------------------------------------------------------------
 -- * Equation (3): the alternating normal form

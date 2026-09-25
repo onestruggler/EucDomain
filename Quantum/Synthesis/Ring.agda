@@ -36,7 +36,7 @@ open import Data.Unit.Base using (⊤)
 open import Function.Base using (_∘_ ; case_of_)
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; subst ; sym)
 open import Relation.Nullary using (yes ; no ; ¬_)
-open import Relation.Nullary.Decidable.Core using (T?)
+open import Relation.Nullary.Decidable.Core using (T? ; map′ ; _×?_)
 
 open import Instances
 open import Literals
@@ -266,11 +266,15 @@ instance
   NegativeDyadic : Negative Dyadic
   NegativeDyadic = negative-from-ring
 
+  -- The decisions of the component types are combined with map′ and
+  -- _×?_ rather than by a "with" on them, because those compute the
+  -- boolean "does" field without ever building the equality proof:
+  -- x == y is then a cheap boolean test, which matters a lot when the
+  -- type checker evaluates matrix equalities (Kopt.Optimality,
+  -- Kopt.SynthProperties, Test.Kopt*).
   DecEqDyadic : DecEq Dyadic
-  DecEqDyadic ._≟_ (Dyadic' a n _) (Dyadic' b m _) with a ≟ b | n ≟ m
-  ... | yes refl | yes refl = yes refl
-  ... | no a≠b | _ = no λ { refl -> a≠b refl }
-  ... | yes _ | no n≠m = no λ { refl -> n≠m refl }
+  DecEqDyadic ._≟_ (Dyadic' a n _) (Dyadic' b m _) =
+    map′ (λ { (refl , refl) -> refl }) (λ { refl -> refl , refl }) (a ≟ b ×? n ≟ m)
 
   DecOrdDyadic : DecOrd Dyadic
   DecOrdDyadic = decOrd-from-bool le lt
@@ -348,10 +352,8 @@ module _ {A : Set} {{_ : Ring A}} where
     RootTwoRingRootTwo .fromℤ[√2] a b = RootTwo (fromℤ a) (fromℤ b)
 
     DecEqRootTwo : {{DecEq A}} -> DecEq (A [√2])
-    DecEqRootTwo ._≟_ (RootTwo a b) (RootTwo c d) with a ≟ c | b ≟ d
-    ... | yes refl | yes refl = yes refl
-    ... | no a≠c | _ = no λ { refl -> a≠c refl }
-    ... | yes _ | no b≠d = no λ { refl -> b≠d refl }
+    DecEqRootTwo ._≟_ (RootTwo a b) (RootTwo c d) =
+      map′ (λ { (refl , refl) -> refl }) (λ { refl -> refl , refl }) (a ≟ c ×? b ≟ d)
 
     HalfRingRootTwo : {{HalfRing A}} -> HalfRing (A [√2])
     HalfRingRootTwo .half = RootTwo half 0#
@@ -557,10 +559,8 @@ module _ {A : Set} {{_ : Ring A}} where
     ComplexRingCplx .i = Cplx 0# 1#
 
     DecEqCplx : {{DecEq A}} -> DecEq (A [i])
-    DecEqCplx ._≟_ (Cplx a b) (Cplx c d) with a ≟ c | b ≟ d
-    ... | yes refl | yes refl = yes refl
-    ... | no a≠c | _ = no λ { refl -> a≠c refl }
-    ... | yes _ | no b≠d = no λ { refl -> b≠d refl }
+    DecEqCplx ._≟_ (Cplx a b) (Cplx c d) =
+      map′ (λ { (refl , refl) -> refl }) (λ { refl -> refl , refl }) (a ≟ c ×? b ≟ d)
 
     OmegaRingCplx : {{RootHalfRing A}} -> OmegaRing (A [i])
     OmegaRingCplx .omega = Cplx roothalf roothalf
@@ -724,12 +724,9 @@ module _ {A : Set} {{_ : Ring A}} where
     NegativeOmega = negative-from-ring
 
     DecEqOmega : {{DecEq A}} -> DecEq (A [ω])
-    DecEqOmega ._≟_ (Omega a b c d) (Omega a' b' c' d') with a ≟ a' | b ≟ b' | c ≟ c' | d ≟ d'
-    ... | yes refl | yes refl | yes refl | yes refl = yes refl
-    ... | no p | _ | _ | _ = no λ { refl -> p refl }
-    ... | yes _ | no p | _ | _ = no λ { refl -> p refl }
-    ... | yes _ | yes _ | no p | _ = no λ { refl -> p refl }
-    ... | yes _ | yes _ | yes _ | no p = no λ { refl -> p refl }
+    DecEqOmega ._≟_ (Omega a b c d) (Omega a' b' c' d') =
+      map′ (λ { (refl , refl , refl , refl) -> refl }) (λ { refl -> refl , refl , refl , refl })
+           (a ≟ a' ×? b ≟ b' ×? c ≟ c' ×? d ≟ d')
 
     HalfRingOmega : {{HalfRing A}} -> HalfRing (A [ω])
     HalfRingOmega .half = Omega 0# 0# 0# half

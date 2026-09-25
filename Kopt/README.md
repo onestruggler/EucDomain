@@ -20,6 +20,7 @@ two-qubit operator is a `Matrix 4 4 DComplex`.
 | `Kopt.Patterns` | IV A–B | the six residue patterns, `lemma-six`, the refinements `refine-ii` … `refine-vi` and their ρ₂ normal forms |
 | `Kopt.Synth` | IV B–C | `decrease1-lde`, `synth`, `optimize-gp`, `prkc` (Table II), Cor. IV.8 |
 | `Kopt.Properties.*` | II | the proofs of Section II (see below); `Kopt.Properties.Algebra` re-exports them |
+| `Kopt.GPData` | III C | the generalized permutations as symbolic permutation/phase data, and the exhaustive check over all 24·256 of them that `gperm-of` returns a circuit implementing each one with ≤ 9 gates, no K gate and ≤ 1 CS gate (used by `Kopt.Optimality` and `Kopt.SynthProperties`) |
 | `Kopt.Descent`, `Kopt.Optimality` | V | descents (Def. V.1–V.2), Equation (3), Thm V.9, Cor. V.8/V.10, Remark V.11 |
 | `Kopt.NormalForms` | V | the residue enumerations behind Lemmas V.3, V.4 and V.6 |
 | `Kopt.OptSteps`, `Kopt.OptPotential`, `Kopt.OptInduction` | V | single descent steps (Remark II.10 for a K gate, invertibility), the Table II potential, and the induction proving Lemma V.7 |

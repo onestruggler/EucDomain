@@ -35,6 +35,7 @@ open import Kopt.Properties.Gamma
 open import Kopt.Properties.DyadicTools
 open import Kopt.Properties.Residue
 open import Kopt.Properties.Lde
+open import Kopt.Properties.LdeVars
 
 private
   module ℤS = IntSolver.+-*-Solver
@@ -127,21 +128,15 @@ invγ-γ = refl
 -- ----------------------------------------------------------------------
 -- * Lemma II.7: for k = lde t > 0, γᵏt is odd
 
--- If γᵏ⁺¹t is an even Gaussian integer, then γᵏt is a Gaussian integer.
+-- If γᵏ⁺¹t is an even Gaussian integer, then γᵏt is a Gaussian
+-- integer. (This and the chains below are the lemmas of
+-- Kopt.Properties.LdeVars, which are proved over variables and are
+-- used here by pure instantiation: written out at the concrete γ and
+-- 1/γ, every step converts two different expressions denoting the
+-- same element of 𝔻[i], which unfolds the whole dyadic arithmetic.)
 DenomExpγ-pred : ∀ (t : DComplex) (k : ℕ) (y : ZComplex) -> t * (γ ↑ suc k) ≡ from-whole (γ * y) -> t * (γ ↑ k) ≡ from-whole y
-DenomExpγ-pred t k y h = begin
-  t * (γ ↑ k)                            ≡⟨ sym (DR.*-identityˡ (t * (γ ↑ k))) ⟩
-  1# * (t * (γ ↑ k))                     ≡⟨ cong (λ z -> z * (t * (γ ↑ k))) (sym invγ-γ) ⟩
-  (invγ * γ) * (t * (γ ↑ k))             ≡⟨ trans (DR.*-assoc invγ γ (t * (γ ↑ k)))
-                                              (cong (λ z -> invγ * z) (DL.swapˡ γ t (γ ↑ k))) ⟩
-  invγ * (t * (γ * (γ ↑ k)))             ≡⟨ cong (λ z -> invγ * z) h ⟩
-  invγ * from-whole (γ * y)              ≡⟨ cong (λ z -> invγ * z) (from-whole-* γ y) ⟩
-  invγ * (from-whole γ * from-whole y)   ≡⟨ cong (λ z -> invγ * (z * from-whole y)) from-whole-γ ⟩
-  invγ * (γ * from-whole y)              ≡⟨ sym (DR.*-assoc invγ γ (from-whole y)) ⟩
-  (invγ * γ) * from-whole y              ≡⟨ cong (λ z -> z * from-whole y) invγ-γ ⟩
-  1# * from-whole y                      ≡⟨ DR.*-identityˡ (from-whole y) ⟩
-  from-whole y                           ∎
-  where open ≡-Reasoning
+DenomExpγ-pred t k y h =
+  whole-pred t invγ γ (γ ↑ k) (γ ↑ suc k) γ y from-whole-γ γ-invγ (↑-suc γ k) h
 
 -- Lemma II.7.
 lemma-II-7 : ∀ (t : DComplex) (k : ℕ) (z : ZComplex) -> lde t ≡ suc k -> t * (γ ↑ suc k) ≡ from-whole z -> parityℤ[i] z ≡ Odd
@@ -161,13 +156,9 @@ lemma-II-7 t k z e h with parityℤ[i] z in pz
 
 -- γ^(l+l')(xy) is integral whenever γˡx and γ^l'y are.
 DenomExpγ-* : ∀ (x y : DComplex) (j k : ℕ) -> DenomExpγ j x -> DenomExpγ k y -> DenomExpγ (j Nat.+ k) (x * y)
-DenomExpγ-* x y j k (denom-exp zx hx) (denom-exp zy hy) = denom-exp (zx * zy) (begin
-  (x * y) * (γ ↑ (j Nat.+ k))                  ≡⟨ cong (λ z -> (x * y) * z) (↑-+ isCommutativeRing-DComplex γ j k) ⟩
-  (x * y) * ((γ ↑ j) * (γ ↑ k))                ≡⟨ DL.interchange x y (γ ↑ j) (γ ↑ k) ⟩
-  (x * (γ ↑ j)) * (y * (γ ↑ k))                ≡⟨ cong₂ (λ u v -> u * v) hx hy ⟩
-  from-whole zx * from-whole zy                ≡⟨ sym (from-whole-* zx zy) ⟩
-  from-whole (zx * zy)                         ∎)
-  where open ≡-Reasoning
+DenomExpγ-* x y j k (denom-exp zx hx) (denom-exp zy hy) =
+  denom-exp (zx * zy) (whole-* x y (γ ↑ j) (γ ↑ k) (γ ↑ (j Nat.+ k)) zx zy
+                               (↑-+ isCommutativeRing-DComplex γ j k) hx hy)
 
 -- Lemma II.8 (subadditivity).
 lemma-II-8 : ∀ (x y : DComplex) -> lde (x * y) Nat.≤ lde x Nat.+ lde y
@@ -199,14 +190,10 @@ lemma-II-8-odd x y zx zy hx hy ox oy = NatP.≤-antisym (lemma-II-8 x y) ≥-par
         lower : DenomExpγ p (x * y)
         lower = DenomExpγ-≤ (NatP.≤-pred (subst (λ n -> j Nat.< n) pe j<)) hj
         step : from-whole (zx * zy) ≡ from-whole (whole lower * γ)
-        step = begin
-          from-whole (zx * zy)                     ≡⟨ sym prod ⟩
-          (x * y) * (γ ↑ (lde x Nat.+ lde y))      ≡⟨ cong (λ n -> (x * y) * (γ ↑ n)) pe ⟩
-          (x * y) * (γ * (γ ↑ p))                  ≡⟨ DL.assoc-swap (x * y) γ (γ ↑ p) ⟩
-          ((x * y) * (γ ↑ p)) * γ                  ≡⟨ cong (λ z -> z * γ) (whole-eq lower) ⟩
-          from-whole (whole lower) * γ             ≡⟨ cong (λ z -> from-whole (whole lower) * z) (sym from-whole-γ) ⟩
-          from-whole (whole lower) * from-whole γ  ≡⟨ sym (from-whole-* (whole lower) γ) ⟩
-          from-whole (whole lower * γ)             ∎
+        step = whole-factor (x * y) γ (γ ↑ p) (γ ↑ suc p) (γ ↑ (lde x Nat.+ lde y)) γ
+                            (zx * zy) (whole lower) from-whole-γ
+                            (cong (λ n -> (γ {DComplex}) ↑ n) pe) (↑-suc γ p)
+                            prod (whole-eq lower)
         even-prod : parityℤ[i] (zx * zy) ≡ Even
         even-prod = divides⇒even (zx * zy) (whole lower)
           (trans (from-whole-injective step) (ZR.*-comm (whole lower) γ))
@@ -233,13 +220,9 @@ max-lub {p} {q} hp hq with p Nat.≤ᵇ q
 
 -- lde(x+y) ≤ max (lde x) (lde y).
 lde-+ : ∀ (x y : DComplex) -> lde (x + y) Nat.≤ max (lde x) (lde y)
-lde-+ x y = lde-least (x + y) (max (lde x) (lde y)) (denom-exp (zx + zy) (begin
-  (x + y) * (γ ↑ M)                    ≡⟨ DR.distribʳ (γ ↑ M) x y ⟩
-  (x * (γ ↑ M)) + (y * (γ ↑ M))        ≡⟨ cong₂ (λ u v -> u + v) hx hy ⟩
-  from-whole zx + from-whole zy        ≡⟨ sym (from-whole-+ zx zy) ⟩
-  from-whole (zx + zy)                 ∎))
+lde-+ x y = lde-least (x + y) (max (lde x) (lde y))
+  (denom-exp (zx + zy) (whole-+ x y (γ ↑ M) zx zy hx hy))
   where
-    open ≡-Reasoning
     M : ℕ
     M = max (lde x) (lde y)
     dx : DenomExpγ M x
@@ -257,13 +240,9 @@ lde-+ x y = lde-least (x + y) (max (lde x) (lde y)) (denom-exp (zx + zy) (begin
 
 -- Multiplying by a Gaussian integer does not increase the lde.
 lde-whole-≤ : ∀ (u : ZComplex) (x : DComplex) -> lde (from-whole u * x) Nat.≤ lde x
-lde-whole-≤ u x = lde-least (from-whole u * x) (lde x) (denom-exp (u * whole dx) (begin
-  (from-whole u * x) * (γ ↑ lde x)         ≡⟨ DR.*-assoc (from-whole u) x (γ ↑ lde x) ⟩
-  from-whole u * (x * (γ ↑ lde x))         ≡⟨ cong (λ z -> from-whole u * z) (whole-eq dx) ⟩
-  from-whole u * from-whole (whole dx)     ≡⟨ sym (from-whole-* u (whole dx)) ⟩
-  from-whole (u * whole dx)                ∎))
+lde-whole-≤ u x = lde-least (from-whole u * x) (lde x)
+  (denom-exp (u * whole dx) (whole-scale x (γ ↑ lde x) u (whole dx) (whole-eq dx)))
   where
-    open ≡-Reasoning
     dx : DenomExpγ (lde x) x
     dx = lde-denom-exp x
 
@@ -280,14 +259,10 @@ lde-i x = NatP.≤-antisym le ge
 
 -- Dividing by γ increases the lde by at most one.
 lde-invγ : ∀ (x : DComplex) -> lde (x * invγ) Nat.≤ suc (lde x)
-lde-invγ x = lde-least (x * invγ) (suc (lde x)) (denom-exp (whole dx) (begin
-  (x * invγ) * (γ * (γ ↑ lde x))    ≡⟨ DL.interchange2 x invγ γ (γ ↑ lde x) ⟩
-  (x * (γ ↑ lde x)) * (invγ * γ)    ≡⟨ cong (λ z -> (x * (γ ↑ lde x)) * z) invγ-γ ⟩
-  (x * (γ ↑ lde x)) * 1#            ≡⟨ DR.*-identityʳ (x * (γ ↑ lde x)) ⟩
-  x * (γ ↑ lde x)                   ≡⟨ whole-eq dx ⟩
-  from-whole (whole dx)             ∎))
+lde-invγ x = lde-least (x * invγ) (suc (lde x))
+  (denom-exp (whole dx) (whole-div x invγ γ (γ ↑ lde x) (γ ↑ suc (lde x)) (whole dx)
+                                   invγ-γ (↑-suc γ (lde x)) (whole-eq dx)))
   where
-    open ≡-Reasoning
     dx : DenomExpγ (lde x) x
     dx = lde-denom-exp x
 

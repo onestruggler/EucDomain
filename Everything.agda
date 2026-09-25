@@ -69,6 +69,7 @@ import Kopt.Permutations
 import Kopt.Patterns
 import Kopt.Synth
 import Kopt.Descent
+import Kopt.GPData
 import Kopt.Optimality
 import Kopt.SynthProperties
 import Kopt.Properties.Algebra
@@ -78,6 +79,7 @@ import Kopt.Properties.Residue
 import Kopt.Properties.KAction
 import Kopt.Properties.KResidue
 import Kopt.Properties.Lde
+import Kopt.Properties.LdeVars
 import Kopt.Properties.LdeLemmas
 
 -- The gridsynth command line program (not --safe: uses FFI for

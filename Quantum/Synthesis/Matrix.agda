@@ -58,8 +58,9 @@ open import Data.Vec.Base as Vec using (Vec ; [] ; _∷_)
 import Data.Vec.Properties as VecP
 open import Effect.Monad using (RawMonad)
 open import Function.Base using (_∘_ ; const)
-open import Relation.Binary.PropositionalEquality using (_≡_ ; refl)
+open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; cong)
 open import Relation.Nullary using (yes ; no)
+open import Relation.Nullary.Decidable.Core using (map′)
 
 open import Instances
 open import Literals
@@ -382,10 +383,12 @@ module _ {A : Set} {{_ : Ring A}} where
 -- Class instances for matrices
 
 instance
+  -- map′ instead of a "with" on the decision for the columns: this
+  -- computes the boolean "does" field without building the equality
+  -- proof, which makes the matrix equality tests that the type
+  -- checker evaluates (Kopt.*, Test.Kopt*) considerably cheaper.
   DecEqMatrix : {m n : ℕ} {A : Set} {{_ : DecEq A}} -> DecEq (Matrix m n A)
-  DecEqMatrix ._≟_ (Matrix' a) (Matrix' b) with a ≟ b
-  ... | yes refl = yes refl
-  ... | no a≠b = no λ { refl -> a≠b refl }
+  DecEqMatrix ._≟_ (Matrix' a) (Matrix' b) = map′ (cong Matrix') (cong unMatrix) (a ≟ b)
 
   ToDyadicMatrix : {m n : ℕ} {A B : Set} {{_ : ToDyadic A B}} -> ToDyadic (Matrix m n A) (Matrix m n B)
   ToDyadicMatrix .maybe-dyadic (Matrix' a) with maybe-dyadic a
