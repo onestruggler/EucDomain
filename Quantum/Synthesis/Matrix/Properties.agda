@@ -189,6 +189,14 @@ module Linear {R : Set} {{_ : Ring R}} (isCR : IsCommutativeRing _≡_ _+_ _*_ -
   ·-identity : ∀ (M : Matrix m n R) → 1# · M ≡ M
   ·-identity M = ext λ i j → trans (·-! 1# M i j) (C.*-identityˡ _)
 
+  -- Scaling by a unit is injective. Prove the transport over the abstract
+  -- coefficient ring so clients need not infer products of concrete scalars.
+  ·-cancel : ∀ x y → x * y ≡ 1# → ∀ (M N : Matrix m n R) → y · M ≡ y · N → M ≡ N
+  ·-cancel x y inverse M N h = trans (sym (undo M)) (trans (cong (x ·_) h) (undo N))
+    where
+    undo : ∀ (A : Matrix m n R) → x · (y · A) ≡ A
+    undo A = trans (·-assoc x y A) (trans (cong (_· A) inverse) (·-identity A))
+
   ·-*ˡ : ∀ x (M : Matrix m n R) (N : Matrix n p R) → (x · M) ·*· N ≡ x · (M ·*· N)
   ·-*ˡ x M N = ext λ i j → begin
     ((x · M) ·*· N) ⟪ i , j ⟫                 ≡⟨ *-! (x · M) N i j ⟩
