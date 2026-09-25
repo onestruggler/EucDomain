@@ -233,15 +233,41 @@ private
   kc-post-ok : gp-mat pre-gp * ⟦ kc-post ⟧ ≡ ⟦ KC ⟧g
   kc-post-ok = refl
 
+  -- The splitting is done on the circuit, by cong ⟦_⟧, so that the
+  -- type checker never has to convert ⟦ck-expansion⟧ into
+  -- ⟦ck-pre ++ ck-post⟧: those are two different expressions for the
+  -- same ten-fold matrix product, and deciding that they are equal
+  -- means evaluating it, which is exactly what must be avoided.
+  ck-split : ck-expansion ≡ ck-pre ++ ck-post
+  ck-split = refl
+
+  kc-split : kc-expansion ≡ kc-pre ++ kc-post
+  kc-split = refl
+
+  -- The two halves are glued together by a lemma whose statement
+  -- contains nothing but variables, and the circuit is rewritten with
+  -- subst. Composing the three steps inline instead makes the
+  -- conversion checker decide that two different expressions for the
+  -- same concrete ten-fold matrix product are equal, i.e. evaluate it,
+  -- which is what must be avoided.
+  glue : (c d : Circuit) (D E : Op) -> ⟦ c ⟧ ≡ D -> D * ⟦ d ⟧ ≡ E -> ⟦ c ++ d ⟧ ≡ E
+  glue c d D E p q = trans (⟦⟧-++ c d) (trans (cong (λ m -> m * ⟦ d ⟧) p) q)
+
+  -- The circuit that is split is a parameter, and the split is a
+  -- hypothesis matched against refl: the result type ⟦ e ⟧ ≡ E is then
+  -- obtained by instantiation alone, so the type checker never has to
+  -- compare two expressions for the same ten-fold matrix product.
+  glue-eq : (e c d : Circuit) -> e ≡ c ++ d -> (D E : Op) ->
+            ⟦ c ⟧ ≡ D -> D * ⟦ d ⟧ ≡ E -> ⟦ e ⟧ ≡ E
+  glue-eq e c d refl D E p q = glue c d D E p q
+
   ck-ok : ⟦ ck-expansion ⟧ ≡ ⟦ CK ⟧g
-  ck-ok = trans (trans (⟦⟧-++ ck-pre ck-post)
-                       (cong (λ m -> m * ⟦ ck-post ⟧) ck-pre-ok))
-                ck-post-ok
+  ck-ok = glue-eq ck-expansion ck-pre ck-post ck-split
+                  (gp-mat pre-gp) ⟦ CK ⟧g ck-pre-ok ck-post-ok
 
   kc-ok : ⟦ kc-expansion ⟧ ≡ ⟦ KC ⟧g
-  kc-ok = trans (trans (⟦⟧-++ kc-pre kc-post)
-                       (cong (λ m -> m * ⟦ kc-post ⟧) kc-pre-ok))
-                kc-post-ok
+  kc-ok = glue-eq kc-expansion kc-pre kc-post kc-split
+                  (gp-mat pre-gp) ⟦ KC ⟧g kc-pre-ok kc-post-ok
 
 decompose-ck-ok : (g : Gate) -> ⟦ decompose-ck g ⟧ ≡ ⟦ g ⟧g
 decompose-ck-ok X₀ = mat-*-identityʳ ⟦ X₀ ⟧g
@@ -646,19 +672,16 @@ private
   eq4ph (a , b , c , d) (a' , b' , c' , d') =
     (a ==ph a') ∧ (b ==ph b') ∧ (c ==ph c') ∧ (d ==ph d')
 
-  eq4ph-sound : {e f : Phase4} -> eq4ph e f ≡ true -> e ≡ f
-  eq4ph-sound {a , b , c , d} {a' , b' , c' , d'} h =
-    cong₂ _,_ (==ph-sound h₁)
-      (cong₂ _,_ (==ph-sound h₂) (cong₂ _,_ (==ph-sound h₃) (==ph-sound h₄)))
-    where
-      h₁ : (a ==ph a') ≡ true
-      h₁ = proj₁ (∧-true h)
-      h₂ : (b ==ph b') ≡ true
-      h₂ = proj₁ (∧-true (proj₂ (∧-true h)))
-      h₃ : (c ==ph c') ≡ true
-      h₃ = proj₁ (∧-true (proj₂ (∧-true (proj₂ (∧-true h)))))
-      h₄ : (d ==ph d') ≡ true
-      h₄ = proj₂ (∧-true (proj₂ (∧-true (proj₂ (∧-true h)))))
+  -- As for eq4p-sound in Kopt.Descent: the four boolean tests are
+  -- brought into scope with "with ... in", because the unifier does not
+  -- decompose a conjunction, so the implicit arguments of ∧-true
+  -- cannot be inferred from a nested ∧.
+  eq4ph-sound : {u v : Phase4} -> eq4ph u v ≡ true -> u ≡ v
+  eq4ph-sound {a , b , c , d} {a' , b' , c' , d'} h
+    with a ==ph a' in ea | b ==ph b' in eb | c ==ph c' in ec | d ==ph d' in ed
+  ... | true | true | true | true =
+        cong₂ _,_ (==ph-sound ea)
+          (cong₂ _,_ (==ph-sound eb) (cong₂ _,_ (==ph-sound ec) (==ph-sound ed)))
 
   gpd-eq? : GPData -> Pos4 -> Phase4 -> Bool
   gpd-eq? (s , f) t e = eq4p s t ∧ eq4ph f e
@@ -673,7 +696,10 @@ private
                   gpd-sem-eq? x t e ≡ true -> ⟦ c ⟧ ≡ gp-mat-of t e
   gpd-sem-sound t e c (just (s , f)) ih h =
     trans (proj₂ (ih s f refl))
-          (cong₂ gp-mat-of (eq4p-sound (proj₁ (∧-true h))) (eq4ph-sound (proj₂ (∧-true h))))
+          (cong₂ gp-mat-of (eq4p-sound (proj₁ parts)) (eq4ph-sound (proj₂ parts)))
+    where
+      parts : (eq4p s t ≡ true) × (eq4ph f e ≡ true)
+      parts = ∧-true {eq4p s t} {eq4ph f e} h
   gpd-sem-sound t e c nothing ih ()
 
   -- The five properties of a canonical generalized-permutation
