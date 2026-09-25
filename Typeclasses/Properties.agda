@@ -135,6 +135,15 @@ module Powers {A : Set} {{sr : SemiRing A}}
           (trans (sym (assoc (x ^ n) (y ^ n) b))
             (trans (cong (_* b) (inverse-powers x y inverse n)) (identityˡ b))))))
 
+  cancel-step : ∀ inverse base → inverse * base ≡ 1# → ∀ k z w →
+    (base ^ suc k) * z ≡ base * w → (base ^ k) * z ≡ w
+  cancel-step inverse base hi k z w h = trans (sym (identityˡ ((base ^ k) * z)))
+    (trans (cong (_* ((base ^ k) * z)) (sym hi))
+      (trans (assoc inverse base ((base ^ k) * z))
+        (trans (cong (inverse *_) (trans (sym (assoc base (base ^ k) z))
+          (trans (cong (_* z) (sym (^-suc base k))) h)))
+          (trans (sym (assoc inverse base w)) (trans (cong (_* w) hi) (identityˡ w))))))
+
 module MapPowers {A B : Set} {{sa : SemiRing A}} {{sb : SemiRing B}}
   (la : IsCommutativeMonoid (_≡_ {A = A}) _*_ 1#)
   (lb : IsCommutativeMonoid (_≡_ {A = B}) _*_ 1#)

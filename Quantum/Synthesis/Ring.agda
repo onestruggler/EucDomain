@@ -247,6 +247,10 @@ private
   ... | true = shiftL a (m Nat.∸ n) , b , m
   ... | false = a , shiftL b (n Nat.∸ m) , n
 
+-- Expose the existing common-denominator calculation for its specification.
+align-dyadic : Dyadic -> Dyadic -> ℤ × ℤ × ℕ
+align-dyadic = align
+
 instance
   SemiRingDyadic : SemiRing Dyadic
   SemiRingDyadic ._+_ x y with align x y

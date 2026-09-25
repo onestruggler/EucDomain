@@ -236,6 +236,22 @@ have no Gaussian or matrix dependency. Matrix factorization and circuit
 optimality remain in the application. `Everything.agda` checks every module
 listed here against this library and the standard library alone.
 
+## Certified gamma denominator extraction
+
+`Quantum.Synthesis.Ring.Properties.GammaDenominator` proves that the existing
+`OnePlusIBase` exponent on `DComplex` clears denominators for every scalar.
+`denominator-factor-whole-at` certifies exact integer extraction at that
+exponent or any larger one; `denominator-reconstruct` proves the round trip.
+The proof covers common-denominator alignment, parity cancellation and
+zero exponents. `align-dyadic` exposes the existing alignment calculation
+without changing its algorithm. `Typeclasses.Properties.Powers.cancel-step`
+provides the generic invertible-base cancellation used by the proof.
+
+These are soundness/reconstruction theorems. Equality of this operational
+exponent with a least denominator exponent is a separate obligation.
+`Test.GammaDenominator` exercises integral, negative, mixed-denominator and
+redundantly scaled inputs; `Everything.agda` includes both modules.
+
 ## Testing
 
 `Test/*.agda` contain checks by evaluation (`refl`); `Test/*Run.agda`

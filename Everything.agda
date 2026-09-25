@@ -113,3 +113,5 @@ import Natural.Sum
 import Quantum.Synthesis.Ring.Properties.DyadicComplex
 import Finite.Check
 import GauInt.Gamma.Residue
+import Quantum.Synthesis.Ring.Properties.GammaDenominator
+import Test.GammaDenominator
