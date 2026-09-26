@@ -1,13 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- The executable quotient is the exact quotient whenever γ divides z.
-module GauInt.Gamma.Division where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Division where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; _/_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Gamma using (γ; powγ; Evenγ)
-open import GauInt.Algebra
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma using (γ; powγ; Evenγ)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra
 open import Data.Integer using (ℤ; +_; -[1+_])
 import Data.Integer as Z
 import Data.Integer.Properties as ZP

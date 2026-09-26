@@ -1,13 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Two gamma digits determine the Gaussian norm modulo four.
-module GauInt.Gamma.NormCongruence where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.NormCongruence where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Gamma using (γ; powγ)
-import GauInt.Gamma.Congruence as G
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma using (γ; powγ)
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Congruence as G
 open import Integer.Congruence using (Cong)
 import Integer.Congruence as IC
 open import Integer.Sum using (intSum)

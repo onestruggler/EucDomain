@@ -216,21 +216,28 @@ standard-library interoperability, and norm preservation of powers.
 ## Scalar arithmetic modules
 
 The reusable scalar theory used by Kopt lives here and has no dependency on
-Kopt matrices, circuits, synthesis, or its source tree:
+Kopt matrices, circuits, synthesis, or its source tree. The theory of the
+framework's Gaussian integers `ZComplex` is in
+`Quantum.Synthesis.Ring.Properties.Gaussian` (written `Gaussian` below),
+next to the other proofs about the rings of the framework; plain integer
+and natural-number facts and finite checking helpers are top-level. (The
+original Euclidean-domain development stays in `GauInt`.)
 
 | Modules | Content |
 | --- | --- |
-| `GauInt.Algebra` | Gaussian ring laws, sparse solver, embeddings, adjoint and norm homomorphisms, units |
-| `GauInt.Gamma`, `GauInt.Gamma.Division`, `GauInt.Gamma.Integer` | Powers and divisibility by `1+i`, exact quotient, embedded-integer divisibility |
-| `GauInt.Gamma.Congruence`, `NormCongruence`, `ImagCongruence` | Decidable congruence modulo gamma powers and its norm/imaginary consequences |
-| `GauInt.Gamma.Residue` | Canonical eight-element encoding modulo gamma cubed, with arithmetic correctness |
-| `GauInt.Parity`, `GauInt.NormParity`, `GauInt.Units` | Gaussian parity, norm parity, and classification of the four units |
+| `Gaussian.Algebra`, `Gaussian.Algebra.Swap` | Gaussian ring laws, sparse solver, embeddings, adjoint and norm homomorphisms, units; commutative rearrangements of products |
+| `Gaussian.Gamma`, `Gaussian.Gamma.Division`, `Gaussian.Gamma.Integer` | Powers and divisibility by `1+i`, exact quotient, embedded-integer divisibility |
+| `Gaussian.Gamma.Congruence`, `NormCongruence`, `ImagCongruence` | Decidable congruence modulo gamma powers and its norm/imaginary consequences |
+| `Gaussian.Gamma.Residue` | Canonical eight-element encoding modulo gamma cubed, with arithmetic correctness |
+| `Gaussian.Parity`, `Gaussian.NormParity`, `Gaussian.Units` | Gaussian parity, norm parity, and classification of the four units |
+| `Gaussian.TwoPower` | Powers of two in the Gaussian integers and the norms of powers of gamma |
+| `Gaussian.Matrix`, `Gaussian.Matrix.Euc`, `Gaussian.Matrix.Integer`, `Gaussian.Matrix.Gram`, `Gaussian.Matrix.Clearing` | Pointwise matrices over the Gaussian integers, views of the column-major matrices, Gram equations, denominator witnesses of dyadic matrices |
 | `Integer.Sum`, `Integer.Congruence`, `Integer.Residues`, `Integer.Parity`, `Integer.Squares` | Finite sums, congruences, residue bounds, Boolean parity, and square bounds |
 | `Natural.Sum` | Finite natural sums and permutation/ordering laws |
 | `Quantum.Synthesis.Ring.Properties.DyadicComplex` | Integer and Gaussian embeddings into dyadics, inverse-gamma scaling, denominator clearing |
 | `Finite.Check` | Generic finite proof-producing decision helpers used by residue certificates |
 
-`GauInt.Units.phaseToZI` is the scalar enumeration `1, i, -1, -i`.
+`Gaussian.Units.phaseToZI` is the scalar enumeration `1, i, -1, -i`.
 It is independent of circuit syntax. Integer parity and square bounds also
 have no Gaussian or matrix dependency. Matrix factorization and circuit
 optimality remain in the application. `Everything.agda` checks every module

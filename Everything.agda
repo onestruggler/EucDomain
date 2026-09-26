@@ -95,18 +95,18 @@ import Test.RotationDecompositionRun
 import Test.StepComp
 
 -- Shared scalar arithmetic, congruences, Gaussian units and dyadic embeddings.
-import GauInt.Algebra
-import GauInt.Algebra.Swap
-import GauInt.Gamma
-import GauInt.Gamma.Congruence
-import GauInt.Gamma.Division
-import GauInt.Gamma.ImagCongruence
-import GauInt.Gamma.Integer
-import GauInt.Gamma.NormCongruence
-import GauInt.NormParity
-import GauInt.Parity
-import GauInt.TwoPower
-import GauInt.Units
+import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra
+import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra.Swap
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Congruence
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Division
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.ImagCongruence
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Integer
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.NormCongruence
+import Quantum.Synthesis.Ring.Properties.Gaussian.NormParity
+import Quantum.Synthesis.Ring.Properties.Gaussian.Parity
+import Quantum.Synthesis.Ring.Properties.Gaussian.TwoPower
+import Quantum.Synthesis.Ring.Properties.Gaussian.Units
 import Integer.Congruence
 import Integer.Parity
 import Integer.Residues
@@ -115,7 +115,7 @@ import Integer.Sum
 import Natural.Sum
 import Quantum.Synthesis.Ring.Properties.DyadicComplex
 import Finite.Check
-import GauInt.Gamma.Residue
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Residue
 import Quantum.Synthesis.Ring.Properties.GammaDenominator
 import Test.GammaDenominator
 
@@ -128,8 +128,8 @@ import Finite.CachedFourSearch
 import Finite.PrefixSearch
 import Finite.SuffixSearch
 import Finite.ScoreCache
-import GauInt.Matrix
-import GauInt.Matrix.Gram
-import GauInt.Matrix.Euc
-import GauInt.Matrix.Integer
-import GauInt.Matrix.Clearing
+import Quantum.Synthesis.Ring.Properties.Gaussian.Matrix
+import Quantum.Synthesis.Ring.Properties.Gaussian.Matrix.Gram
+import Quantum.Synthesis.Ring.Properties.Gaussian.Matrix.Euc
+import Quantum.Synthesis.Ring.Properties.Gaussian.Matrix.Integer
+import Quantum.Synthesis.Ring.Properties.Gaussian.Matrix.Clearing

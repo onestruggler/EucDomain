@@ -2,12 +2,12 @@
 
 -- Dimension-independent counterpart of Lean's Mat4/Mat6 operations.
 -- Matrix equality is pointwise, avoiding a function-extensionality axiom.
-module GauInt.Matrix where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Matrix where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Algebra
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Fin using (Fin; zero; suc)
 import Data.Vec.Functional as Vector

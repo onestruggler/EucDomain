@@ -2,13 +2,13 @@
 
 -- Powers of two in the Gaussian integers, their integer counterparts, and
 -- their relation to the norms of powers of gamma.
-module GauInt.TwoPower where
+module Quantum.Synthesis.Ring.Properties.Gaussian.TwoPower where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _*_; 1#)
 open _[i] using (re; im)
-open import GauInt.Algebra using (*-assoc; *-identityˡ; *-identityʳ; conj-mul; lift; lift-mul; module GaussianSolver)
-open import GauInt.Gamma using (γ; powγ; powγ-cancel)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra using (*-assoc; *-identityˡ; *-identityʳ; conj-mul; lift; lift-mul; module GaussianSolver)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma using (γ; powγ; powγ-cancel)
 open import Data.Nat using (ℕ; zero; suc)
 import Data.Nat.GeneralisedArithmetic as Iteration
 open import Data.Integer using (ℤ; +_; -[1+_])

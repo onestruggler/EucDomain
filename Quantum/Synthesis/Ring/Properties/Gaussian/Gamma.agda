@@ -1,11 +1,11 @@
 {-# OPTIONS --safe --without-K #-}
 
-module GauInt.Gamma where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Gamma where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Algebra
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra
 open import Data.Nat using (ℕ; zero; suc)
 import Data.Nat.GeneralisedArithmetic as Iteration
 import Data.Nat.Properties as NP

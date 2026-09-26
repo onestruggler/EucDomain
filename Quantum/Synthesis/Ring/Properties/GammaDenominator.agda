@@ -6,10 +6,10 @@ module Quantum.Synthesis.Ring.Properties.GammaDenominator where
 import Quantum.Synthesis.Ring as R
 import Quantum.Synthesis.Ring.Properties.Dyadic as DP
 import Quantum.Synthesis.Ring.Properties.DyadicComplex as D
-import GauInt.Gamma as G
-import GauInt.Gamma.Division as GD
-import GauInt.Parity as GP
-import GauInt.Algebra as ZG
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma as G
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Division as GD
+import Quantum.Synthesis.Ring.Properties.Gaussian.Parity as GP
+import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra as ZG
 import Typeclasses.Properties as Power
 open import Algebra.Bundles using (CommutativeRing)
 open import Instances as TC using (_+_; _*_; _^_; 1#)

@@ -1,18 +1,18 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- The executable Gaussian residue agrees with divisibility by gamma.
-module GauInt.Parity where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Parity where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Gamma using (γ; powγ; Evenγ; even-mul; even-unscale)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma using (γ; powγ; Evenγ; even-mul; even-unscale)
   renaming (gaussianParity to parity)
-open import GauInt.Algebra using (Unit)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra using (Unit)
 open import Integer.Congruence
 import Integer.Parity as IP
 open import Integer.Parity using (parity-congruent)
-open import GauInt.NormParity using (equal-parities-even)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.NormParity using (equal-parities-even)
 open import Data.Integer using (ℤ; +_; -[1+_]; ∣_∣)
 import Data.Integer as Z
 open import Data.Integer.Solver using (module +-*-Solver)

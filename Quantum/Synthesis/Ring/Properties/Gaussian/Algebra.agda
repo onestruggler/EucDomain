@@ -1,7 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Port of the ring and conjugation facts in Lean/Kopt/Algebra.lean.
-module GauInt.Algebra where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Algebra where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)

@@ -1,17 +1,17 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Constructive congruences modulo arbitrary powers of gamma.
-module GauInt.Gamma.Congruence where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Congruence where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Gamma using (γ; powγ)
-open import GauInt.Algebra
-open import GauInt.Gamma using (γ-cancel)
-open import GauInt.Gamma using (Evenγ) renaming (gaussianParity to parity)
-open import GauInt.Gamma.Division using (divideGamma; divide-multiple; divide-complete)
-import GauInt.Parity as GP
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma using (γ; powγ)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma using (γ-cancel)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma using (Evenγ) renaming (gaussianParity to parity)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Division using (divideGamma; divide-multiple; divide-complete)
+import Quantum.Synthesis.Ring.Properties.Gaussian.Parity as GP
 open import Data.Nat using (ℕ; zero; suc)
 import Data.Nat.GeneralisedArithmetic as Iteration
 open import Data.Product using (Σ; Σ-syntax; _,_)

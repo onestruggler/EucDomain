@@ -1,13 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Norm-one Gaussian integers are exactly the four scalar Clifford phases.
-module GauInt.Units where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Units where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Algebra using (Unit)
-open import GauInt.NormParity using (norm-product-real)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra using (Unit)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.NormParity using (norm-product-real)
 open import Integer.Squares using (square-nonnegative; small-square)
 open import Finite.Check using (checkFin; decAll)
 open import Data.Integer using (ℤ; +_; -[1+_])

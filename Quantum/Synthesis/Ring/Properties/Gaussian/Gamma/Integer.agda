@@ -1,10 +1,10 @@
 {-# OPTIONS --safe --without-K #-}
-module GauInt.Gamma.Integer where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Integer where
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; _/_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Gamma using (γ; powγ; Evenγ)
-open import GauInt.Algebra
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma using (γ; powγ; Evenγ)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra
 open import Data.Integer using (ℤ; +_; -[1+_]; _/ℕ_)
 import Data.Integer as Z
 import Data.Integer.Properties as ZP
@@ -20,8 +20,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans
 open import Integer.Parity
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Empty using (⊥-elim)
-open import GauInt.Gamma.Division using (divideGamma; divide-complete)
-open import GauInt.Gamma using (Oddγ; γ-mul-coordinates; recover-re)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Division using (divideGamma; divide-complete)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma using (Oddγ; γ-mul-coordinates; recover-re)
 
 zero-parity-even : ∀ x → parity x ≡ 0 → Evenγ (lift x)
 zero-parity-even x hp = Cplx q (Z.- q) , trans (cong lift hx) product

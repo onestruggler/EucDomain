@@ -1,13 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
-module GauInt.Matrix.Integer where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Matrix.Integer where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Algebra
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra
 open import Integer.Sum using (intSum)
-open import GauInt.Matrix
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Matrix
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Integer using (ℤ; +_)

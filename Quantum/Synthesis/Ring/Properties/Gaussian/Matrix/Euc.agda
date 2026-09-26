@@ -1,12 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Pointwise proof views of EucDomain's column-major matrices.
-module GauInt.Matrix.Euc where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Matrix.Euc where
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Algebra using (*-comm; +-identityʳ)
-open import GauInt.Matrix
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra using (*-comm; +-identityʳ)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Matrix
 import Quantum.Synthesis.Matrix as E
 open import Quantum.Synthesis.Ring using (RingCplx; AdjointCplx)
 open import Instances using (Ringℤ; Adjointℤ)

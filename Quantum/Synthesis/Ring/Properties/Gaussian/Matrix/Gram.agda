@@ -1,14 +1,14 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Matrix adjoints, row and column Gram matrices, and scaled Gram equations.
-module GauInt.Matrix.Gram where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Matrix.Gram where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Algebra
-open import GauInt.Matrix
-open import GauInt.TwoPower using (twoPower; twoPower-add)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Matrix
+open import Quantum.Synthesis.Ring.Properties.Gaussian.TwoPower using (twoPower; twoPower-add)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Nat.Properties using () renaming (+-comm to nat+-comm)
 open import Data.Fin using (Fin; zero; suc)

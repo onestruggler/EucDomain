@@ -12,8 +12,8 @@ import Quantum.Synthesis.Ring.Properties.Hom as Hom
 open import Instances as TC using (_+_; _-_; _*_; -_; _^_; 0#; 1#)
 open import Algebra.Bundles using (CommutativeRing)
 import Typeclasses.Properties as Power
-import GauInt.Gamma as G
-import GauInt.Algebra as ZG
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma as G
+import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra as ZG
 open import Data.Integer.Base using (ℤ; +_; -[1+_])
 import Data.Integer.Properties as ZP
 open import Data.Nat.Base using (ℕ; zero; suc; _≤_)

@@ -1,12 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Complete canonical encoding of Gaussian integers modulo gamma cubed.
-module GauInt.Gamma.Residue where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Residue where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-import GauInt.Gamma.Congruence as G
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Congruence as G
 open import Finite.Check
 open import Data.Integer using (ℤ; +_; _%ℕ_; _/ℕ_)
 import Data.Integer as Z

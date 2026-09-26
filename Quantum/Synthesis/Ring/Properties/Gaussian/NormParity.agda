@@ -1,13 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Even norm forces gamma divisibility, including negative coordinates.
-module GauInt.NormParity where
+module Quantum.Synthesis.Ring.Properties.Gaussian.NormParity where
 
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Gamma using (Evenγ)
-open import GauInt.TwoPower using (twoPower; twoPowerInt; twoPower-lift)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma using (Evenγ)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.TwoPower using (twoPower; twoPowerInt; twoPower-lift)
 open import Integer.Parity
 open import Integer.Congruence
 open import Integer.Residues using (four-to-two)

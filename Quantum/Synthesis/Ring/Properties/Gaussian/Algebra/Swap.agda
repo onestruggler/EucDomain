@@ -1,12 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Commutative rearrangements of Gaussian-integer products, kept outside
--- GauInt.Algebra so that wholesale openings of it never see the name swap.
-module GauInt.Algebra.Swap where
+-- Quantum.Synthesis.Ring.Properties.Gaussian.Algebra so that wholesale openings of it never see the name swap.
+module Quantum.Synthesis.Ring.Properties.Gaussian.Algebra.Swap where
 
 open import Quantum.Synthesis.Ring using (ZComplex)
 open import Instances as TC using (_*_)
-open import GauInt.Algebra using (module GaussianSolver)
+open import Quantum.Synthesis.Ring.Properties.Gaussian.Algebra using (module GaussianSolver)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open GaussianSolver
 

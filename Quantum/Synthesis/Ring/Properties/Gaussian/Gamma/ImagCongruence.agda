@@ -1,10 +1,10 @@
 {-# OPTIONS --safe --without-K #-}
 
-module GauInt.Gamma.ImagCongruence where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.ImagCongruence where
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-import GauInt.Gamma.Congruence as G
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma.Congruence as G
 import Integer.Congruence as IC
 open import Integer.Parity using (parityBit-congruent)
 open import Integer.Parity using (parityBit)

@@ -1,13 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Denominator witnesses about actual dyadic matrices, without ScaledMatrix.
-module GauInt.Matrix.Clearing where
+module Quantum.Synthesis.Ring.Properties.Gaussian.Matrix.Clearing where
 
 import Quantum.Synthesis.Ring as R
 import Quantum.Synthesis.Matrix as E
 import Quantum.Synthesis.Ring.Properties.DyadicComplex as D
-import GauInt.Gamma as G
-import GauInt.Matrix.Euc as V
+import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma as G
+import Quantum.Synthesis.Ring.Properties.Gaussian.Matrix.Euc as V
 open import Instances as TC using (_*_; _^_)
 open import Data.Nat.Base as N using (ℕ; zero; suc; _+_; _≤_)
 import Data.Nat.Properties as NP
