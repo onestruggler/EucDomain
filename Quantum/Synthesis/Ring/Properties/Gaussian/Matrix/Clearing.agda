@@ -6,6 +6,7 @@ module Quantum.Synthesis.Ring.Properties.Gaussian.Matrix.Clearing where
 import Quantum.Synthesis.Ring as R
 import Quantum.Synthesis.Matrix as E
 import Quantum.Synthesis.Ring.Properties.DyadicComplex as D
+import Quantum.Synthesis.Ring.Properties.GammaDenominator as GD
 import Quantum.Synthesis.Ring.Properties.Gaussian.Gamma as G
 import Quantum.Synthesis.Ring.Properties.Gaussian.Matrix.Euc as V
 open import Instances as TC using (_*_; _^_)
@@ -15,6 +16,7 @@ open import Data.Vec.Base using (Vec; []; _∷_; lookup)
 open import Data.Fin.Base using (Fin; zero; suc)
 open import Data.Bool.Base using (T; true; false)
 open import Data.Unit.Base using (tt)
+open import Data.Product using (_,_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; subst)
 
 private
@@ -34,14 +36,34 @@ private
   vector-bound {Base = Base} (x ∷ xs) (suc i) = NP.≤-trans (vector-bound {Base = Base} xs i)
     (max-right (R.denomexpBy Base x) (R.denomexpBy Base xs))
 
+  max-upper : ∀ a b k → a ≤ k → b ≤ k → TC.max a b ≤ k
+  max-upper a b k ha hb with a N.≤ᵇ b
+  ... | true = hb
+  ... | false = ha
+
+  vector-upper : ∀ {C : Set} {Base : Set} {{d : R.DenomExp Base C}} {n}
+    (xs : Vec C n) k → (∀ i → R.denomexpBy Base (lookup xs i) ≤ k) → R.denomexpBy Base xs ≤ k
+  vector-upper [] k h = N.z≤n
+  vector-upper {Base = Base} (x ∷ xs) k h = max-upper (R.denomexpBy Base x) (R.denomexpBy Base xs) k
+    (h zero) (vector-upper {Base = Base} xs k (λ i → h (suc i)))
+
 bitBound : ∀ {m n} → E.Matrix m n R.DComplex → ℕ
 bitBound = R.denomexpBy R.TwoBase
 
+entry-boundBy : (Base : Set) {C : Set} {{d : R.DenomExp Base C}} {m n : ℕ}
+  (A : E.Matrix m n C) → ∀ i j → R.denomexpBy Base (V.view A i j) ≤ R.denomexpBy Base A
+entry-boundBy Base (E.Matrix' columns) i j = NP.≤-trans
+  (vector-bound {Base = Base} (lookup columns j) i)
+  (vector-bound {Base = Base} columns j)
+
 entry-bound : ∀ {m n} (A : E.Matrix m n R.DComplex) i j →
   R.denomexpBy R.TwoBase (V.view A i j) ≤ bitBound A
-entry-bound (E.Matrix' columns) i j = NP.≤-trans
-  (vector-bound {Base = R.TwoBase} (lookup columns j) i)
-  (vector-bound {Base = R.TwoBase} columns j)
+entry-bound = entry-boundBy R.TwoBase
+
+matrix-boundBy : (Base : Set) {C : Set} {{d : R.DenomExp Base C}} {m n : ℕ}
+  (A : E.Matrix m n C) (k : ℕ) → (∀ i j → R.denomexpBy Base (V.view A i j) ≤ k) → R.denomexpBy Base A ≤ k
+matrix-boundBy Base (E.Matrix' columns) k h = vector-upper {Base = Base} columns k
+  (λ j → vector-upper {Base = Base} (lookup columns j) k (λ i → h i j))
 
 embed : ∀ {m n} → E.Matrix m n R.ZComplex → E.Matrix m n R.DComplex
 embed = E.matrix-map D.embed
@@ -56,6 +78,48 @@ record Witness {m n} (A : E.Matrix m n R.DComplex) : Set where
     numerator : E.Matrix m n R.ZComplex
     clears : scale exponent A ≡ embed numerator
 open Witness public
+
+-- Every entry of a cleared matrix is an integer-cleared scalar. The scalar
+-- minimum theorem and the maximum over entries give the matrix lower bound.
+operational-minimal : ∀ {m n} (A : E.Matrix m n R.DComplex) (w : Witness A) →
+  R.denomexpBy R.OnePlusIBase A ≤ exponent w
+operational-minimal {m} {n} A w = matrix-boundBy R.OnePlusIBase A k
+  (λ i j → GD.denominator-minimal (V.view A i j) k (V.view W i j , point i j))
+  where
+  k : ℕ
+  k = exponent w
+  W : E.Matrix m n R.ZComplex
+  W = numerator w
+  point : ∀ i j → (D.gamma ^ k) * V.view A i j ≡ D.embed (V.view W i j)
+  point i j = trans {j = V.view (scale k A) i j} (sym (V.map-view ((D.gamma ^ k) *_) A i j))
+    (trans {j = V.view (embed W) i j} (cong (λ M → V.view M i j) (clears w))
+      (V.map-view D.embed W i j))
+
+-- The operational gamma exponent and numerator are a proved witness too.
+-- Rectangular matrices and empty dimensions are included.
+operational : ∀ {m n} (A : E.Matrix m n R.DComplex) → Witness A
+operational {m} {n} A = witness {A = A} k W
+  (V.ext {A = scale k A} {B = embed W} point)
+  where
+  k : ℕ
+  k = R.denomexpBy R.OnePlusIBase A
+  F : E.Matrix m n R.DComplex
+  F = R.denomexp-factorBy R.OnePlusIBase A k
+  W : E.Matrix m n R.ZComplex
+  W = R.to-whole {E.Matrix m n R.DComplex} {E.Matrix m n R.ZComplex} F
+  factor-view : ∀ i j → V.view F i j ≡ V.view A i j * (D.gamma ^ k)
+  factor-view = V.map-view (_* (D.gamma ^ k)) A
+  whole-view : ∀ i j → V.view W i j ≡ R.to-whole {R.DComplex} {R.ZComplex} (V.view F i j)
+  whole-view = V.map-view (R.to-whole {R.DComplex} {R.ZComplex}) F
+  point : ∀ i j → V.view (scale k A) i j ≡ V.view (embed W) i j
+  point i j = trans {j = (D.gamma ^ k) * V.view A i j} (V.map-view ((D.gamma ^ k) *_) A i j)
+    (trans {j = V.view A i j * (D.gamma ^ k)} (D.*-comm (D.gamma ^ k) (V.view A i j))
+      (trans {j = D.embed (R.to-whole {R.DComplex} {R.ZComplex} (V.view A i j * (D.gamma ^ k)))}
+        (sym (GD.denominator-factor-whole-at (V.view A i j) k (entry-boundBy R.OnePlusIBase A i j)))
+        (trans {j = D.embed (V.view W i j)}
+          (cong D.embed (sym (trans {j = R.to-whole {R.DComplex} {R.ZComplex} (V.view F i j)}
+            (whole-view i j) (cong (R.to-whole {R.DComplex} {R.ZComplex}) (factor-view i j)))))
+          (sym (V.map-view D.embed W i j)))))
 
 reconstruct : ∀ {m n} → ℕ → E.Matrix m n R.ZComplex → E.Matrix m n R.DComplex
 reconstruct k N = (D.inverseGamma ^ k) E.scalarmult (embed N)
