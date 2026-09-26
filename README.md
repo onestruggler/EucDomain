@@ -276,6 +276,10 @@ When the coefficient map preserves conjugation, it also preserves adjoints and
 row Gram matrices. `Linear.Conjugate.gram-scale` proves the norm factor in a
 scaled Gram matrix. `Linear.Evaluation` proves agreement of a native left fold
 with any semantics satisfying the corresponding identity and product equations.
+`Linear.·-cancel` cancels scaling by a unit; `Map.Conjugate.gram-unitary`
+transfers a cleared Gram equation through an embedding when its scale is a unit.
+`Linear.Conjugate.·-adj-injective` and `·-norm-injective` transfer injectivity
+of scaling by `x` to scaling by its conjugate and by `x * adj x`.
 
 The generic matrix theory is adapted from the independently developed
 `Kopt.Algebra.Linear` at Kopt revision `a0b62a0`; it has no Kopt dependency.

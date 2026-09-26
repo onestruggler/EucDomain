@@ -189,6 +189,14 @@ module Linear {R : Set} {{_ : Ring R}} (isCR : IsCommutativeRing _≡_ _+_ _*_ -
   ·-identity : ∀ (M : Matrix m n R) → 1# · M ≡ M
   ·-identity M = ext λ i j → trans (·-! 1# M i j) (C.*-identityˡ _)
 
+  -- Scaling by a unit is injective. Prove the transport over the abstract
+  -- coefficient ring so clients need not infer products of concrete scalars.
+  ·-cancel : ∀ x y → x * y ≡ 1# → ∀ (M N : Matrix m n R) → y · M ≡ y · N → M ≡ N
+  ·-cancel x y inverse M N h = trans (sym (undo M)) (trans (cong (x ·_) h) (undo N))
+    where
+    undo : ∀ (A : Matrix m n R) → x · (y · A) ≡ A
+    undo A = trans (·-assoc x y A) (trans (cong (_· A) inverse) (·-identity A))
+
   ·-*ˡ : ∀ x (M : Matrix m n R) (N : Matrix n p R) → (x · M) ·*· N ≡ x · (M ·*· N)
   ·-*ˡ x M N = ext λ i j → begin
     ((x · M) ·*· N) ⟪ i , j ⟫                 ≡⟨ *-! (x · M) N i j ⟩
@@ -276,6 +284,23 @@ module Linear {R : Set} {{_ : Ring R}} (isCR : IsCommutativeRing _≡_ _+_ _*_ -
     gram-scale : ∀ x (M : Matrix m n R) → gram (x · M) ≡ (x * adj x) · gram M
     gram-scale x M = trans (cong ((x · M) ·*·_) (†-· x M)) (·-* x (adj x) M (adjoint M))
 
+    ·-adj-injective : ∀ x →
+      (∀ {a b} {M N : Matrix a b R} → x · M ≡ x · N → M ≡ N) →
+      ∀ (M N : Matrix m n R) → adj x · M ≡ adj x · N → M ≡ N
+    ·-adj-injective x cancel M N h = trans (sym (†-† M))
+      (trans (cong adjoint (cancel {M = adjoint M} {N = adjoint N}
+        (trans (sym (transport M)) (trans (cong adjoint h) (transport N))))) (†-† N))
+      where
+      transport : ∀ (A : Matrix m n R) → adjoint (adj x · A) ≡ x · adjoint A
+      transport A = trans (†-· (adj x) A) (cong (_· adjoint A) (involutive x))
+
+    ·-norm-injective : ∀ x →
+      (∀ {a b} {M N : Matrix a b R} → x · M ≡ x · N → M ≡ N) →
+      ∀ (M N : Matrix m n R) → (x * adj x) · M ≡ (x * adj x) · N → M ≡ N
+    ·-norm-injective x cancel M N h = ·-adj-injective x cancel M N
+      (cancel {M = adj x · M} {N = adj x · N}
+        (trans (·-assoc x (adj x) M) (trans h (sym (·-assoc x (adj x) N)))))
+
 -- A coefficient homomorphism preserves native matrix multiplication.
 module Map {A B : Set} {{ra : Ring A}} {{rb : Ring B}}
   (la : IsCommutativeRing (_≡_ {A = A}) _+_ _*_ -_ 0# 1#)
@@ -332,3 +357,13 @@ module Map {A B : Set} {{ra : Ring A}} {{rb : Ring B}}
 
     map-gram : ∀ (M : Matrix m n A) → matrix-map f (SA.gram M) ≡ TA.gram (matrix-map f M)
     map-gram M = trans (map-product M (adjoint M)) (cong (matrix-map f M ·*·_) (map-adjoint M))
+
+    -- Transfer a cleared Gram equation before specializing coefficients to
+    -- a computational number representation such as canonical dyadics.
+    gram-unitary : ∀ z inverse (M : Matrix n n B) (N : Matrix n n A) →
+      inverse * f z ≡ 1# → matrix-map f (SA.gram N) ≡ f z scalarmult TA.gram M →
+      SA.gram N ≡ z scalarmult 𝕀 → TA.gram M ≡ 𝕀
+    gram-unitary z inverse M N hinv hscale hgram =
+      Target.·-cancel inverse (f z) hinv (TA.gram M) 𝕀
+        (trans (sym hscale) (trans (cong (matrix-map f) hgram)
+          (trans (map-scale z 𝕀) (cong (f z scalarmult_) map-identity))))
