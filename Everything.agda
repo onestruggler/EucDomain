@@ -128,3 +128,8 @@ import Finite.CachedFourSearch
 import Finite.PrefixSearch
 import Finite.SuffixSearch
 import Finite.ScoreCache
+import GauInt.Matrix
+import GauInt.Matrix.Gram
+import GauInt.Matrix.Euc
+import GauInt.Matrix.Integer
+import GauInt.Matrix.Clearing
