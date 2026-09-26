@@ -6,13 +6,17 @@ module GauInt.Units where
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
+open import GauInt.Algebra using (Unit)
 open import GauInt.NormParity using (norm-product-real)
 open import Integer.Squares using (square-nonnegative; small-square)
+open import Finite.Check using (checkFin; decAll)
 open import Data.Integer using (ℤ; +_; -[1+_])
 import Data.Integer as Z
 import Data.Integer.Properties as ZP
-open import Data.Fin using (Fin)
+open import Data.Fin using (Fin; #_)
 open import Data.Fin.Patterns using (0F; 1F; 2F; 3F)
+open import Data.Vec.Base using (Vec; lookup; []; _∷_)
+open import Data.Unit using (tt)
 open import Data.Product using (Σ; Σ-syntax; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂; subst)
@@ -52,3 +56,21 @@ norm-one-phase (Cplx a b) h = small-unit a b (small-square a aBound) (small-squa
 
 unit-phase : ∀ z → z * TC.adj z ≡ 1# → Σ[ p ∈ Fin 4 ] z ≡ phaseToZI p
 unit-phase z h = norm-one-phase z (trans (sym (norm-product-real z)) (cong re h))
+
+abstract
+  phaseToZI-unit : ∀ p → Unit (phaseToZI p)
+  phaseToZI-unit = checkFin 4 _ (λ p → (phaseToZI p * TC.adj (phaseToZI p)) TC.≟ 1#) tt
+
+-- Multiplication of the four phases, as addition of their exponents mod 4.
+phaseAddData : Vec (Vec (Fin 4) 4) 4
+phaseAddData = ((# 0) ∷ (# 1) ∷ (# 2) ∷ (# 3) ∷ []) ∷
+  ((# 1) ∷ (# 2) ∷ (# 3) ∷ (# 0) ∷ []) ∷
+  ((# 2) ∷ (# 3) ∷ (# 0) ∷ (# 1) ∷ []) ∷
+  ((# 3) ∷ (# 0) ∷ (# 1) ∷ (# 2) ∷ []) ∷ []
+
+phaseAdd : Fin 4 → Fin 4 → Fin 4
+phaseAdd k l = lookup (lookup phaseAddData k) l
+
+abstract
+  phase-add : ∀ k l → phaseToZI (phaseAdd k l) ≡ phaseToZI k * phaseToZI l
+  phase-add = checkFin 4 _ (λ k → decAll 4 _ (λ l → phaseToZI (phaseAdd k l) TC.≟ (phaseToZI k * phaseToZI l))) tt

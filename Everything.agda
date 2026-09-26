@@ -96,6 +96,7 @@ import Test.StepComp
 
 -- Shared scalar arithmetic, congruences, Gaussian units and dyadic embeddings.
 import GauInt.Algebra
+import GauInt.Algebra.Swap
 import GauInt.Gamma
 import GauInt.Gamma.Congruence
 import GauInt.Gamma.Division
@@ -104,6 +105,7 @@ import GauInt.Gamma.Integer
 import GauInt.Gamma.NormCongruence
 import GauInt.NormParity
 import GauInt.Parity
+import GauInt.TwoPower
 import GauInt.Units
 import Integer.Congruence
 import Integer.Parity
@@ -116,3 +118,13 @@ import Finite.Check
 import GauInt.Gamma.Residue
 import Quantum.Synthesis.Ring.Properties.GammaDenominator
 import Test.GammaDenominator
+
+-- Shared matrix, residue and finite-search theory used by Kopt.
+import Finite.Enumeration
+import Finite.BooleanSearch
+import Finite.FourSearch
+import Finite.FourSearchFirst
+import Finite.CachedFourSearch
+import Finite.PrefixSearch
+import Finite.SuffixSearch
+import Finite.ScoreCache

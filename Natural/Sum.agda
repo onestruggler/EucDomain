@@ -3,8 +3,11 @@
 -- Pointwise finite-sum laws for the executable residue weight.
 module Natural.Sum where
 
-open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _≤_)
+open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _≤_; z≤n)
 import Data.Nat.Properties as NP
+import Data.Integer as Z
+import Data.Integer.Properties as ZP
+open import Integer.Sum using (intSum)
 open import Data.Nat.Solver using (module +-*-Solver)
 open +-*-Solver
 open import Data.Fin using (Fin; zero; suc; _≟_)
@@ -20,6 +23,16 @@ sumNat {Data.Nat.suc n} f = f zero + sumNat (λ i → f (suc i))
 sum-cong : ∀ {n} {f g : Fin n → ℕ} → (∀ i → f i ≡ g i) → sumNat f ≡ sumNat g
 sum-cong {zero} h = refl
 sum-cong {suc n} h = cong₂ _+_ (h zero) (sum-cong (λ i → h (suc i)))
+
+-- The integer +_ stays qualified here: unqualified it clashes with sections of ℕ's _+_.
+natSum-cast : ∀ {n} (f : Fin n → ℕ) → Z.+ (sumNat f) ≡ intSum (λ i → Z.+ (f i))
+natSum-cast {zero} f = refl
+natSum-cast {suc n} f = trans (ZP.pos-+ (f zero) (sumNat (λ i → f (suc i))))
+  (cong (λ x → Z.+ (f zero) Z.+ x) (natSum-cast (λ i → f (suc i))))
+
+natSum-bound : ∀ {n} (f : Fin n → ℕ) → (∀ i → f i ≤ 1) → sumNat f ≤ n
+natSum-bound {zero} f h = z≤n
+natSum-bound {suc n} f h = NP.+-mono-≤ (h zero) (natSum-bound (λ i → f (suc i)) (λ i → h (suc i)))
 
 sum-zero : ∀ n → sumNat {n} (λ _ → 0) ≡ 0
 sum-zero zero = refl
