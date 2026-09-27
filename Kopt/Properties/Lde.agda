@@ -235,6 +235,18 @@ private
   2ℤℂ : ZComplex
   2ℤℂ = fromℕ 2
 
+  -- The embedding ℤ[i] → 𝔻[i] takes 2 to 2 and iᵐ, 2ᵐ to iᵐ, 2ᵐ.
+  -- (Stating the base cases separately, and pushing them through ↑
+  -- with an explicit cong as from-whole-γ↑ does, keeps the conversion
+  -- checker from having to decide (from-whole i)ᵐ = iᵐ and
+  -- (from-whole 2)ᵐ = 2ᵐ by unfolding the dyadic arithmetic of both
+  -- sides: that alone cost 13 s of the type checking of γ↑even.)
+  from-whole-2 : (DComplex ∋ from-whole 2ℤℂ) ≡ 2ℂ
+  from-whole-2 = refl
+
+  from-whole-i↑ : ∀ m -> (DComplex ∋ from-whole ((i {ZComplex}) ↑ m)) ≡ (i {DComplex}) ↑ m
+  from-whole-i↑ m = trans (from-whole-↑ i m) (cong (λ z -> z ↑ m) from-whole-i)
+
   γ-sq-ℤ : (γ {ZComplex}) * γ ≡ i * 2ℤℂ
   γ-sq-ℤ = refl
 
@@ -253,15 +265,31 @@ private
       open ≡-Reasoning
       open ZS
 
+  from-whole-2↑ : ∀ m -> (DComplex ∋ from-whole (2ℤℂ ↑ m)) ≡ 2ℂ ↑ m
+  from-whole-2↑ m = trans (from-whole-↑ 2ℤℂ m) (cong (λ z -> z ↑ m) from-whole-2)
+
+  -- Transporting a product identity along from-whole, over VARIABLES:
+  -- if az = bz·cz in ℤ[i] and A, B, C are the images of az, bz, cz in
+  -- 𝔻[i], then A = B·C. Everything concrete stays inside the three
+  -- image equations, which are instances of from-whole-γ↑ and friends
+  -- and cost about 80 ms each. (An intermediate version of this lemma
+  -- which had the powers aⁿ, bᵏ, cᵏ *inside* it cost 15 s by itself:
+  -- a conversion between two 𝔻[i] products of eta-expanded from-whole
+  -- terms is as expensive as one between concrete constants, so the
+  -- powers must stay outside.)
+  whole-transfer : ∀ (A B C : DComplex) (az bz cz : ZComplex) ->
+                   (DComplex ∋ from-whole az) ≡ A ->
+                   (DComplex ∋ from-whole bz) ≡ B ->
+                   (DComplex ∋ from-whole cz) ≡ C ->
+                   az ≡ bz * cz -> A ≡ B * C
+  whole-transfer A B C az bz cz refl refl refl refl = from-whole-* bz cz
+
   -- The same in 𝔻[i], by transporting along from-whole.
   γ↑even : ∀ m -> ((γ {DComplex}) ↑ (m Nat.+ m)) ≡ (i ↑ m) * (2ℂ ↑ m)
-  γ↑even m = begin
-    (γ {DComplex}) ↑ (m Nat.+ m)                     ≡⟨ sym (from-whole-γ↑ (m Nat.+ m)) ⟩
-    from-whole ((γ {ZComplex}) ↑ (m Nat.+ m))        ≡⟨ cong (λ z -> DComplex ∋ from-whole z) (γ↑even-ℤ m) ⟩
-    from-whole ((i ↑ m) * (2ℤℂ ↑ m))                 ≡⟨ from-whole-* (i ↑ m) (2ℤℂ ↑ m) ⟩
-    from-whole (i ↑ m) * from-whole (2ℤℂ ↑ m)        ≡⟨ cong₂ (λ p q -> p * q) (from-whole-↑ i m) (from-whole-↑ 2ℤℂ m) ⟩
-    (i ↑ m) * (2ℂ ↑ m)                               ∎
-    where open ≡-Reasoning
+  γ↑even m = whole-transfer ((γ {DComplex}) ↑ (m Nat.+ m)) ((i {DComplex}) ↑ m) (2ℂ ↑ m)
+                            ((γ {ZComplex}) ↑ (m Nat.+ m)) ((i {ZComplex}) ↑ m) (2ℤℂ ↑ m)
+                            (from-whole-γ↑ (m Nat.+ m)) (from-whole-i↑ m) (from-whole-2↑ m)
+                            (γ↑even-ℤ m)
 
   invγ : DComplex
   invγ = 1/γ
@@ -332,6 +360,42 @@ whole-pred t u g p q gz y hgz gu refl h = begin
   (g * from-whole y) * u              ≡⟨ unit-elimʳ g u (from-whole y) gu ⟩
   from-whole y                        ∎
   where open ≡-Reasoning
+
+-- The quotient of two integral multiples: if t·q = W and t·p = U are
+-- both integral and q = p·r with r the image of the Gaussian integer
+-- rz, then W = U·rz. (Used for q = γ^(2m), p = γʲ, r = γ^(2m-j) in
+-- denom-div below.)
+whole-quot : ∀ (t p q r : DComplex) (rz W U : ZComplex) ->
+             q ≡ p * r -> (DComplex ∋ from-whole rz) ≡ r ->
+             t * q ≡ from-whole W -> t * p ≡ from-whole U ->
+             W ≡ U * rz
+whole-quot t p q r rz W U refl hrz hW hU = from-whole-injective (begin
+  from-whole W                  ≡⟨ sym hW ⟩
+  t * (p * r)                   ≡⟨ sym (DR.*-assoc t p r) ⟩
+  (t * p) * r                   ≡⟨ cong (λ z -> z * r) hU ⟩
+  from-whole U * r              ≡⟨ cong (λ z -> from-whole U * z) (sym hrz) ⟩
+  from-whole U * from-whole rz  ≡⟨ sym (from-whole-* U rz) ⟩
+  from-whole (U * rz)           ∎)
+  where open ≡-Reasoning
+
+-- Transporting an integrality equation between two expressions for
+-- the same denominator: from t·q = z and q' = q conclude t·q' = z.
+--
+-- Instantiating one of the bigger lemmas above at q = γ^(k+1) costs
+-- 16-30 s, because γ^(k+1) reduces to γ·γᵏ and γ is a concrete element
+-- of 𝔻[i], so the conversion checker unfolds its dyadic arithmetic.
+-- Instantiating the big lemma at γ·γᵏ instead -- where its hypothesis
+-- q ≡ g·p is literally refl -- and transporting the result with
+-- whole-at, whose own instantiation has three parameters instead of
+-- six, is twenty times cheaper WHEN the lemma concludes with from-whole
+-- of a variable: measured on K-up-one of Kopt.Properties.KResidue,
+-- 20.7 s directly against 1.1 s this way. For the lemmas that conclude
+-- with from-whole of a product (whole-suc, whole-pred, whole-*) the
+-- transport gains little or nothing, so they are instantiated directly
+-- there; the measurements are quoted at the use sites.
+whole-at : ∀ (t q q' : DComplex) (z : ZComplex) -> q' ≡ q ->
+           t * q ≡ from-whole z -> t * q' ≡ from-whole z
+whole-at t q q' z refl h = h
 
 -- γ can be cancelled in 𝔻[i] (it is invertible there).
 γ-cancelˡ : ∀ (x y : DComplex) -> γ * x ≡ γ * y -> x ≡ y
@@ -409,9 +473,18 @@ record DenomExpγ (k : ℕ) (t : DComplex) : Set where
 open DenomExpγ public
 
 -- Denominator exponents are closed upwards.
+--
+-- This is the most expensive definition of this module: whole-suc has
+-- to be instantiated at the concrete γ^(k+1). It is done at γ·γᵏ, where
+-- whole-suc's hypothesis q ≡ g·p is refl, and whole-at then transports
+-- the result: 16 s, against 18-21 s when whole-suc is instantiated at
+-- γ^(k+1) directly. (Only a modest gain, unlike the twentyfold one for
+-- whole-div; see the comment on whole-at.)
 DenomExpγ-suc : ∀ (k : ℕ) (t : DComplex) -> DenomExpγ k t -> DenomExpγ (suc k) t
 DenomExpγ-suc k t (denom-exp z h) =
-  denom-exp (γ * z) (whole-suc t γ (γ ↑ k) (γ ↑ suc k) γ z from-whole-γ (↑-suc γ k) h)
+  denom-exp (γ * z)
+    (whole-at t (γ * (γ ↑ k)) (γ ↑ suc k) (γ * z) (↑-suc γ k)
+              (whole-suc t γ (γ ↑ k) (γ * (γ ↑ k)) γ z from-whole-γ refl h))
 
 DenomExpγ-≤′ : ∀ {j k : ℕ} {t : DComplex} -> j Nat.≤′ k -> DenomExpγ j t -> DenomExpγ k t
 DenomExpγ-≤′ Nat.≤′-refl h = h
@@ -476,17 +549,13 @@ module _ (a : ℤ) (k : ℕ) (b : ℤ) (l : ℕ) (c : T (Canonical a k)) (d : T 
       lemB = subst (λ j -> y * (2𝔻 ↑ j) ≡ from-whole B) (NatP.m+[n∸m]≡n l≤m)
                    (dyadic-scale b l (m Nat.∸ l) d)
 
-  -- t·γ²ᵐ is the Gaussian integer W = iᵐZ.
+  -- t·γ²ᵐ is the Gaussian integer W = iᵐZ. (By pure instantiation of
+  -- whole-suc at g = iᵐ, p = 2ᵐ, q = γ²ᵐ; the equation γ²ᵐ = iᵐ2ᵐ is
+  -- γ↑even. Written out as a reasoning chain, with the concrete γ, i
+  -- and 2 of 𝔻[i] next to the variable t, this cost 33 s.)
   t-γ : t * (γ ↑ (m Nat.+ m)) ≡ from-whole W
-  t-γ = begin
-    t * (γ ↑ (m Nat.+ m))               ≡⟨ cong (λ z -> t * z) (γ↑even m) ⟩
-    t * ((i ↑ m) * (2ℂ ↑ m))            ≡⟨ DL.swapˡ t (i ↑ m) (2ℂ ↑ m) ⟩
-    (i ↑ m) * (t * (2ℂ ↑ m))            ≡⟨ cong (λ z -> (i ↑ m) * z) t-2 ⟩
-    (i ↑ m) * from-whole Z              ≡⟨ cong (λ z -> z * from-whole Z) (sym (from-whole-↑ i m)) ⟩
-    from-whole (i ↑ m) * from-whole Z   ≡⟨ sym (from-whole-* (i ↑ m) Z) ⟩
-    from-whole ((i ↑ m) * Z)            ∎
-    where
-      open ≡-Reasoning
+  t-γ = whole-suc t (i ↑ m) (2ℂ ↑ m) (γ ↑ (m Nat.+ m)) (i ↑ m) Z
+                  (from-whole-i↑ m) (γ↑even m) t-2
 
   -- W and Z have the same parity.
   W-parity : parityℤ[i] W ≡ parityℤ[i] Z
@@ -501,22 +570,19 @@ module _ (a : ℤ) (k : ℕ) (b : ℤ) (l : ℕ) (c : T (Canonical a k)) (d : T 
     ((- i) ↑ m) * ((i ↑ m) * Z)        ∎
     where open ≡-Reasoning
 
-  -- Any denominator exponent j ≤ 2m yields a divisor of W.
+  -- Any denominator exponent j ≤ 2m yields a divisor of W. (By pure
+  -- instantiation of whole-quot; the reasoning chain this replaces,
+  -- which mixed the variable t with the concrete γ, cost 31 s.)
   denom-div : ∀ j -> j Nat.≤ (m Nat.+ m) -> DenomExpγ j t ->
               ∃ λ U -> W ≡ U * (γ ↑ ((m Nat.+ m) Nat.∸ j))
-  denom-div j j≤ (denom-exp U h) = U , from-whole-injective (begin
-    from-whole W                                     ≡⟨ sym t-γ ⟩
-    t * (γ ↑ (m Nat.+ m))                            ≡⟨ cong (λ n -> t * (γ ↑ n)) (sym (NatP.m+[n∸m]≡n j≤)) ⟩
-    t * (γ ↑ (j Nat.+ ((m Nat.+ m) Nat.∸ j)))        ≡⟨ cong (λ z -> t * z)
-                                                          (↑-+ isCommutativeRing-DComplex γ j ((m Nat.+ m) Nat.∸ j)) ⟩
-    t * ((γ ↑ j) * (γ ↑ ((m Nat.+ m) Nat.∸ j)))      ≡⟨ sym (DR.*-assoc t (γ ↑ j) (γ ↑ ((m Nat.+ m) Nat.∸ j))) ⟩
-    (t * (γ ↑ j)) * (γ ↑ ((m Nat.+ m) Nat.∸ j))      ≡⟨ cong (λ z -> z * (γ ↑ ((m Nat.+ m) Nat.∸ j))) h ⟩
-    from-whole U * (γ ↑ ((m Nat.+ m) Nat.∸ j))       ≡⟨ cong (λ z -> from-whole U * z)
-                                                          (sym (from-whole-γ↑ ((m Nat.+ m) Nat.∸ j))) ⟩
-    from-whole U * from-whole (γ ↑ ((m Nat.+ m) Nat.∸ j))
-                                                     ≡⟨ sym (from-whole-* U (γ ↑ ((m Nat.+ m) Nat.∸ j))) ⟩
-    from-whole (U * (γ ↑ ((m Nat.+ m) Nat.∸ j)))     ∎)
-    where open ≡-Reasoning
+  denom-div j j≤ (denom-exp U h) = U ,
+    whole-quot t (γ ↑ j) (γ ↑ (m Nat.+ m)) (γ ↑ ((m Nat.+ m) Nat.∸ j))
+               (γ ↑ ((m Nat.+ m) Nat.∸ j)) W U
+               split (from-whole-γ↑ ((m Nat.+ m) Nat.∸ j)) t-γ h
+    where
+      split : (γ {DComplex}) ↑ (m Nat.+ m) ≡ (γ ↑ j) * (γ ↑ ((m Nat.+ m) Nat.∸ j))
+      split = trans (cong (λ n -> (γ {DComplex}) ↑ n) (sym (NatP.m+[n∸m]≡n j≤)))
+                    (↑-+ isCommutativeRing-DComplex γ j ((m Nat.+ m) Nat.∸ j))
 
   -- If m > 0 then A or B is odd.
   AB-odd : ∀ m' -> max k l ≡ suc m' -> (evenℤ A ≡ false) ⊎ (evenℤ B ≡ false)
@@ -606,6 +672,9 @@ module _ (a : ℤ) (k : ℕ) (b : ℤ) (l : ℕ) (c : T (Canonical a k)) (d : T 
       integral : t * (γ ↑ (2 Nat.* suc m' Nat.∸ 1)) ≡ from-whole V
       integral = subst (λ n -> t * (γ ↑ n) ≡ from-whole V) (sym halved) step
         where
+          -- (Instantiated directly at γ^(2m), which is stuck: 5-6 s.
+          -- Going through whole-at was measured at 8 s here, see the
+          -- comment on whole-at.)
           step : t * (γ ↑ (m Nat.+ m')) ≡ from-whole V
           step = whole-pred t invγ γ (γ ↑ (m Nat.+ m')) (γ ↑ (m Nat.+ m)) γ V
                             from-whole-γ γ-invγ

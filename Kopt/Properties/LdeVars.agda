@@ -66,6 +66,17 @@ whole-+ x y p X Y hx hy = begin
   from-whole (X + Y)            ∎
   where open ≡-Reasoning
 
+-- The same for a difference.
+whole-minus : ∀ (x y p : DComplex) (X Y : ZComplex) ->
+              x * p ≡ from-whole X -> y * p ≡ from-whole Y ->
+              (x - y) * p ≡ from-whole (X - Y)
+whole-minus x y p X Y hx hy = begin
+  (x - y) * p                   ≡⟨ DL.minus-distribʳ x y p ⟩
+  (x * p) - (y * p)             ≡⟨ cong₂ (λ a b -> a - b) hx hy ⟩
+  from-whole X - from-whole Y   ≡⟨ sym (from-whole-minus X Y) ⟩
+  from-whole (X - Y)            ∎
+  where open ≡-Reasoning
+
 -- The denominators multiply: (xy)(pj·pk) is integral when x·pj and
 -- y·pk are.
 whole-* : ∀ (x y pj pk q : DComplex) (X Y : ZComplex) -> q ≡ pj * pk ->
@@ -119,63 +130,23 @@ whole-factor w g p q qn gz W Z hgz refl refl hW hZ = begin
 -- ----------------------------------------------------------------------
 -- * The K action: (x±y)/g
 --
--- These four are the chains of Kopt.Properties.KResidue.
+-- Kopt.Properties.KResidue needs no chain of its own: it adds or
+-- subtracts the entries with whole-+ / whole-minus above and then
+-- divides by g once, with whole-div-one below (when the lde drops) or
+-- with whole-div (when it rises). Each of those instantiations at the
+-- concrete γ costs seconds, so there is exactly one of each.
 
--- If X+Y = gz·V, then ((x+y)/g)·p is V.
-whole-div-+ : ∀ (x y u g p : DComplex) (gz X Y V : ZComplex) ->
-              (DComplex ∋ from-whole gz) ≡ g -> g * u ≡ 1# ->
-              x * p ≡ from-whole X -> y * p ≡ from-whole Y -> X + Y ≡ gz * V ->
-              ((x + y) * u) * p ≡ from-whole V
-whole-div-+ x y u g p gz X Y V hgz gu hx hy e = begin
-  ((x + y) * u) * p                  ≡⟨ trans (DL.swapʳ (x + y) u p)
-                                          (cong (λ z -> z * u) (DR.distribʳ p x y)) ⟩
-  ((x * p) + (y * p)) * u            ≡⟨ cong (λ z -> z * u) (cong₂ (λ a b -> a + b) hx hy) ⟩
-  (from-whole X + from-whole Y) * u  ≡⟨ cong (λ z -> z * u) (sym (from-whole-+ X Y)) ⟩
-  from-whole (X + Y) * u             ≡⟨ cong (λ z -> from-whole z * u) e ⟩
+-- If W = gz·V and w·p = W, then (w/g)·p is V.
+whole-div-one : ∀ (w u g p : DComplex) (gz W V : ZComplex) ->
+                (DComplex ∋ from-whole gz) ≡ g -> g * u ≡ 1# ->
+                w * p ≡ from-whole W -> W ≡ gz * V ->
+                (w * u) * p ≡ from-whole V
+whole-div-one w u g p gz W V hgz gu h e = begin
+  (w * u) * p                        ≡⟨ DL.swapʳ w u p ⟩
+  (w * p) * u                        ≡⟨ cong (λ z -> z * u) h ⟩
+  from-whole W * u                   ≡⟨ cong (λ z -> from-whole z * u) e ⟩
   from-whole (gz * V) * u            ≡⟨ cong (λ z -> z * u) (from-whole-* gz V) ⟩
   (from-whole gz * from-whole V) * u ≡⟨ cong (λ z -> (z * from-whole V) * u) hgz ⟩
   (g * from-whole V) * u             ≡⟨ unit-elimʳ g u (from-whole V) gu ⟩
   from-whole V                       ∎
-  where open ≡-Reasoning
-
--- If X-Y = gz·V, then ((x-y)/g)·p is V.
-whole-div-minus : ∀ (x y u g p : DComplex) (gz X Y V : ZComplex) ->
-                  (DComplex ∋ from-whole gz) ≡ g -> g * u ≡ 1# ->
-                  x * p ≡ from-whole X -> y * p ≡ from-whole Y -> X - Y ≡ gz * V ->
-                  ((x - y) * u) * p ≡ from-whole V
-whole-div-minus x y u g p gz X Y V hgz gu hx hy e = begin
-  ((x - y) * u) * p                  ≡⟨ trans (DL.swapʳ (x - y) u p)
-                                          (cong (λ z -> z * u) (DL.minus-distribʳ x y p)) ⟩
-  ((x * p) - (y * p)) * u            ≡⟨ cong (λ z -> z * u) (cong₂ (λ a b -> a - b) hx hy) ⟩
-  (from-whole X - from-whole Y) * u  ≡⟨ cong (λ z -> z * u) (sym (from-whole-minus X Y)) ⟩
-  from-whole (X - Y) * u             ≡⟨ cong (λ z -> from-whole z * u) e ⟩
-  from-whole (gz * V) * u            ≡⟨ cong (λ z -> z * u) (from-whole-* gz V) ⟩
-  (from-whole gz * from-whole V) * u ≡⟨ cong (λ z -> (z * from-whole V) * u) hgz ⟩
-  (g * from-whole V) * u             ≡⟨ unit-elimʳ g u (from-whole V) gu ⟩
-  from-whole V                       ∎
-  where open ≡-Reasoning
-
--- At one level higher, no divisibility is needed: ((x+y)/g)·q = X+Y.
-whole-up-+ : ∀ (x y u g p q : DComplex) (X Y : ZComplex) -> u * g ≡ 1# -> q ≡ g * p ->
-             x * p ≡ from-whole X -> y * p ≡ from-whole Y ->
-             ((x + y) * u) * q ≡ from-whole (X + Y)
-whole-up-+ x y u g p q X Y ug refl hx hy = begin
-  ((x + y) * u) * (g * p)        ≡⟨ trans (DL.interchange2 (x + y) u g p)
-                                      (cong (λ z -> z * (u * g)) (DR.distribʳ p x y)) ⟩
-  ((x * p) + (y * p)) * (u * g)  ≡⟨ unit-elimˡ g u ((x * p) + (y * p)) ug ⟩
-  (x * p) + (y * p)              ≡⟨ cong₂ (λ a b -> a + b) hx hy ⟩
-  from-whole X + from-whole Y    ≡⟨ sym (from-whole-+ X Y) ⟩
-  from-whole (X + Y)             ∎
-  where open ≡-Reasoning
-
-whole-up-minus : ∀ (x y u g p q : DComplex) (X Y : ZComplex) -> u * g ≡ 1# -> q ≡ g * p ->
-                 x * p ≡ from-whole X -> y * p ≡ from-whole Y ->
-                 ((x - y) * u) * q ≡ from-whole (X - Y)
-whole-up-minus x y u g p q X Y ug refl hx hy = begin
-  ((x - y) * u) * (g * p)        ≡⟨ trans (DL.interchange2 (x - y) u g p)
-                                      (cong (λ z -> z * (u * g)) (DL.minus-distribʳ x y p)) ⟩
-  ((x * p) - (y * p)) * (u * g)  ≡⟨ unit-elimˡ g u ((x * p) - (y * p)) ug ⟩
-  (x * p) - (y * p)              ≡⟨ cong₂ (λ a b -> a - b) hx hy ⟩
-  from-whole X - from-whole Y    ≡⟨ sym (from-whole-minus X Y) ⟩
-  from-whole (X - Y)             ∎
   where open ≡-Reasoning

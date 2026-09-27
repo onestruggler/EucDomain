@@ -101,25 +101,44 @@ parity-value Odd bs = trans (parity-+ 1# (value-of-residue bs * γ))
     open GS
 
 -- Correctness of ρ: x ≡ value-of-residue (ρ n x) (mod γⁿ).
+--
+-- The case distinction on the parity is made by the helper "go",
+-- which takes the parity and its equation as arguments, and the two
+-- defining equations of ρ are then applied with subst. Written as
+-- "with parityℤ[i] x in eq" instead, the type checker has to convert
+-- the motive of the with-abstraction -- which contains γ↑(n+1) and
+-- the recursive residue -- in every branch, and that alone cost 47 s
+-- of type checking (plus about as much again in the with-functions).
 ρ-sound : ∀ n x -> x ≈ value-of-residue (ρ n x) mod (γ ↑ n)
 ρ-sound zero x = mod-wit x (GS.solve 1 (λ u -> u :- con (+ 0) := u :* con (+ 1)) refl x)
   where open GS
-ρ-sound (suc n) x with parityℤ[i] x in eq
-... | Even = subst (λ w -> w ≈ (value-of-residue (ρ n (x /γ)) * γ) mod (γ ↑ suc n))
-                   (γ-div-even x eq) (≈-γ-step {n = n} (ρ-sound n (x /γ)))
-... | Odd = ≈-resp e1 e2 (≈-+ base (≈-refl 1#))
+ρ-sound (suc n) x = go (parityℤ[i] x) refl
   where
     open GS
-    y : ZComplex
-    y = (x - 1#) /γ
-    v : ZComplex
-    v = value-of-residue (ρ n y)
-    base : (x - 1#) ≈ (v * γ) mod (γ ↑ suc n)
-    base = subst (λ w -> w ≈ (v * γ) mod (γ ↑ suc n)) (odd-div x eq) (≈-γ-step {n = n} (ρ-sound n y))
-    e1 : (x - 1#) + 1# ≡ x
-    e1 = solve 1 (λ u -> (u :- con (+ 1)) :+ con (+ 1) := u) refl x
-    e2 : v * γ + 1# ≡ 1# + v * γ
-    e2 = solve 2 (λ u g -> u :* g :+ con (+ 1) := con (+ 1) :+ u :* g) refl v γ
+    Goal : Residue (suc n) -> Set
+    Goal bs = x ≈ value-of-residue bs mod (γ ↑ suc n)
+
+    even-case : parityℤ[i] x ≡ Even -> Goal (Even ∷ ρ n (x /γ))
+    even-case eq = subst (λ w -> w ≈ (value-of-residue (ρ n (x /γ)) * γ) mod (γ ↑ suc n))
+                         (γ-div-even x eq) (≈-γ-step {n = n} (ρ-sound n (x /γ)))
+
+    odd-case : parityℤ[i] x ≡ Odd -> Goal (Odd ∷ ρ n ((x - 1#) /γ))
+    odd-case eq = ≈-resp e1 e2 (≈-+ base (≈-refl 1#))
+      where
+        y : ZComplex
+        y = (x - 1#) /γ
+        v : ZComplex
+        v = value-of-residue (ρ n y)
+        base : (x - 1#) ≈ (v * γ) mod (γ ↑ suc n)
+        base = subst (λ w -> w ≈ (v * γ) mod (γ ↑ suc n)) (odd-div x eq) (≈-γ-step {n = n} (ρ-sound n y))
+        e1 : (x - 1#) + 1# ≡ x
+        e1 = solve 1 (λ u -> (u :- con (+ 1)) :+ con (+ 1) := u) refl x
+        e2 : v * γ + 1# ≡ 1# + v * γ
+        e2 = solve 2 (λ u g -> u :* g :+ con (+ 1) := con (+ 1) :+ u :* g) refl v γ
+
+    go : ∀ b -> parityℤ[i] x ≡ b -> Goal (ρ (suc n) x)
+    go Even eq = subst Goal (sym (ρ-even-step n x eq)) (even-case eq)
+    go Odd eq = subst Goal (sym (ρ-odd-step n x eq)) (odd-case eq)
 
 -- ----------------------------------------------------------------------
 -- * Distinct binary strings are distinct residue classes

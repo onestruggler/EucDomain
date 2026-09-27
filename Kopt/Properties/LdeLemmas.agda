@@ -134,27 +134,51 @@ invγ-γ = refl
 -- used here by pure instantiation: written out at the concrete γ and
 -- 1/γ, every step converts two different expressions denoting the
 -- same element of 𝔻[i], which unfolds the whole dyadic arithmetic.)
+-- This is the most expensive definition of this module (25 s): one
+-- instantiation of whole-pred at the concrete γᵏ⁺¹, which reduces to
+-- γ·γᵏ and so unfolds the dyadic arithmetic of γ. Routing it through
+-- whole-at, which makes the analogous instantiation of whole-div
+-- twenty times cheaper (see K-up-one in Kopt.Properties.KResidue),
+-- was measured at the same 25 s here, so it is done directly.
 DenomExpγ-pred : ∀ (t : DComplex) (k : ℕ) (y : ZComplex) -> t * (γ ↑ suc k) ≡ from-whole (γ * y) -> t * (γ ↑ k) ≡ from-whole y
 DenomExpγ-pred t k y h =
   whole-pred t invγ γ (γ ↑ k) (γ ↑ suc k) γ y from-whole-γ γ-invγ (↑-suc γ k) h
 
 -- Lemma II.7.
+--
+-- The case distinction on the parity of z is made by the helper "go",
+-- which takes the parity and its equation as arguments. With
+-- "with parityℤ[i] z in pz" the with-abstraction has to be checked in
+-- a context that contains h : t·γᵏ⁺¹ = z, so its motive contains the
+-- concrete γ^(k+1) = γ·γᵏ; that is most of the 44 s that
+-- --profile=definitions reported as "Miscellaneous" for this module
+-- (with-functions are not attributed to the definition they come
+-- from).
 lemma-II-7 : ∀ (t : DComplex) (k : ℕ) (z : ZComplex) -> lde t ≡ suc k -> t * (γ ↑ suc k) ≡ from-whole z -> parityℤ[i] z ≡ Odd
-lemma-II-7 t k z e h with parityℤ[i] z in pz
-... | Odd = refl
-... | Even = ⊥-elim (NatP.n≮n k (subst (λ n -> n Nat.≤ k) e small))
+lemma-II-7 t k z e h = go (parityℤ[i] z) refl
   where
-    y : ZComplex
-    y = z /γ
-    lower : DenomExpγ k t
-    lower = denom-exp y (DenomExpγ-pred t k y (trans h (cong (λ w -> DComplex ∋ from-whole w) (sym (γ-div-even z pz)))))
-    small : lde t Nat.≤ k
-    small = lde-least t k lower
+    even-absurd : parityℤ[i] z ≡ Even -> ⊥
+    even-absurd pz = NatP.n≮n k (subst (λ n -> n Nat.≤ k) e small)
+      where
+        y : ZComplex
+        y = z /γ
+        lower : DenomExpγ k t
+        lower = denom-exp y (DenomExpγ-pred t k y (trans h (cong (λ w -> DComplex ∋ from-whole w) (sym (γ-div-even z pz)))))
+        small : lde t Nat.≤ k
+        small = lde-least t k lower
+
+    go : ∀ b -> parityℤ[i] z ≡ b -> parityℤ[i] z ≡ Odd
+    go Odd pz = pz
+    go Even pz = ⊥-elim (even-absurd pz)
 
 -- ----------------------------------------------------------------------
 -- * Lemma II.8: subadditivity of lde
 
 -- γ^(l+l')(xy) is integral whenever γˡx and γ^l'y are.
+-- (Instantiated directly at γ^(j+k): 12 s. Going through whole-at, as
+-- K-up-one of Kopt.Properties.KResidue does, was measured at 17 s here
+-- -- the transport only pays for the lemmas whose conclusion is
+-- from-whole of a VARIABLE, see the comment on whole-at.)
 DenomExpγ-* : ∀ (x y : DComplex) (j k : ℕ) -> DenomExpγ j x -> DenomExpγ k y -> DenomExpγ (j Nat.+ k) (x * y)
 DenomExpγ-* x y j k (denom-exp zx hx) (denom-exp zy hy) =
   denom-exp (zx * zy) (whole-* x y (γ ↑ j) (γ ↑ k) (γ ↑ (j Nat.+ k)) zx zy
