@@ -391,6 +391,17 @@ private
                      (cong4D (vsel-mrow U j ι0) (vsel-mrow U j ι1)
                              (vsel-mrow U j ι2) (vsel-mrow U j ι3))
 
+  -- The column analogue. col-ints below passes this to scale-ipc, whose
+  -- hypothesis is stated over the four entries: with vec4-η instead, the
+  -- hypothesis reads vsel ιk (mcol c U) where the expected type reads
+  -- ment ιk c U, and although the two are definitionally equal, the
+  -- comparison happens after ipc has reduced to a sum of four products
+  -- in 𝔻[i], so the checker normalises eight dyadic products instead of
+  -- comparing four stuck projections.
+  col-η4 : (U : Op) (c : Ix) ->
+           mcol c U ≡ (ment ι0 c U ∷ ment ι1 c U ∷ ment ι2 c U ∷ ment ι3 c U ∷ [])
+  col-η4 U c = vec4-η (mcol c U)
+
 -- ----------------------------------------------------------------------
 -- * The Gaussian integers of the entries, exported
 --
@@ -434,7 +445,7 @@ abstract
               (Weq U l hl ι0 c) (Weq U l hl ι1 c) (Weq U l hl ι2 c) (Weq U l hl ι3 c)
               (Weq U l hl ι0 r) (Weq U l hl ι1 r) (Weq U l hl ι2 r) (Weq U l hl ι3 r)
               (subst2 (λ v w -> ipc v w ≡ from-whole T)
-                      (vec4-η (mcol c U)) (vec4-η (mcol r U)) hip)
+                      (col-η4 U c) (col-η4 U r) hip)
 
   -- The same for two rows.
   row-ints : (U : Op) (l : ℕ) (hl : lde U Nat.≤ l) (r c : Ix) (T : ZComplex) ->
