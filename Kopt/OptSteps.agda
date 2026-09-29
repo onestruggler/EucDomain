@@ -52,6 +52,7 @@ open import Quantum.Synthesis.Matrix
 open import Kopt.Base
 open import Kopt.Gates
 open import Kopt.Patterns using (SixCases ; I ; II ; III ; IV ; IVt ; V ; VI ; patof ; DecEqSixCases)
+open import Kopt.Unitary using (IsUnitary)
 open import Kopt.Descent
 open import Kopt.Optimality
 
@@ -261,14 +262,37 @@ steps-inv-kc (s ∷ ss) =
                (NatP.+-comm (steps-kc ss) (step-kc s)))
 
 -- ----------------------------------------------------------------------
+-- * Unitarity along a descent
+--
+-- The operators of the paper are the two-qubit Clifford+CS operators,
+-- that is, the unitaries over 𝔻[i]; the type Op contains every 4×4
+-- matrix, and Lemma IV.1 is false without unitarity (the matrix γ⁻¹·1
+-- has lde 1 and pattern (i)). Unitarity is therefore carried as an
+-- explicit hypothesis, in the form the induction of Kopt.OptInduction
+-- needs: every matrix reachable from A by a list of steps is unitary.
+--
+-- Every step multiplies by a unitary -- a generalized permutation or a
+-- K₁ gate -- so this holds for every unitary A; stated in this form it
+-- is closed under steps for free (steps-unitary), which is what the
+-- induction uses.
+StepsUnitary : Op -> Set
+StepsUnitary A = (ss : List Step) -> IsUnitary (run ss A)
+
+steps-unitary-here : (A : Op) -> StepsUnitary A -> IsUnitary A
+steps-unitary-here A h = h []
+
+steps-unitary : (A : Op) (ss : List Step) -> StepsUnitary A -> StepsUnitary (run ss A)
+steps-unitary A ss h ts = subst IsUnitary (run-++ ss ts A) (h (ss ++ ts))
+
+-- ----------------------------------------------------------------------
 -- * Lemma IV.1: pattern (i) and lde 0
 --
--- "A has pattern (i) if and only if lde(A) = 0" (Lemma IV.1). This is
--- the one fact about the *function* patof that the induction needs and
--- that cannot be established here: patof is defined in Kopt.Patterns
--- by a `with` on a private helper, so even its definitional half ("at
--- lde 0 the search of lemma-six either finds pattern (i) or fails")
--- cannot be proved outside that module. It is therefore a hypothesis,
--- threaded through everything below.
+-- "A has pattern (i) if and only if lde(A) = 0" (Lemma IV.1), for a
+-- unitary A. This is the one fact about the *function* patof that the
+-- induction needs; it is proved in Kopt.PatternFacts (lemma-IV-1-I),
+-- which is why it is stated here as a Set rather than assumed: the
+-- modules below take it as a parameter, and Kopt.OptInduction
+-- discharges it.
 Lemma-IV-1-I : Set
-Lemma-IV-1-I = (A : Op) -> (lde A ≡ 0 -> patof A ≡ just I) × (patof A ≡ just I -> lde A ≡ 0)
+Lemma-IV-1-I = (A : Op) -> IsUnitary A ->
+               (lde A ≡ 0 -> patof A ≡ just I) × (patof A ≡ just I -> lde A ≡ 0)

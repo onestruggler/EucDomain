@@ -24,6 +24,20 @@ compare symbolic data proved correct once, rather than matrices. These
 two rules took the slowest modules from 45 minutes to 10 minutes in
 total.
 
+A second rule, about the overloading itself: never leave the type of an
+overloaded name to be determined later. A class method whose type
+arguments are still metavariables — `from-whole` handed to a
+module whose two type parameters are not yet known, say — makes instance
+search enumerate every instance of that class in the framework and
+elaborate the rest of the application against each candidate. The cost is
+not a slowdown but a wall: one such application took a module from 28
+seconds to not finishing in 200, and a (genuinely ill-formed)
+`fromℕ 2 {ZComplex}` needed more than six gigabytes of heap before
+reporting anything. Pin the types — `(DComplex ∋ from-whole x)`, a local
+alias with a signature, or explicit `{A} {B}` on a module application —
+and the same code is instant. Note that `fromℕ`'s type argument precedes
+its numeral, so `fromℕ 2 {A}` is never the way to say it.
+
 ## Contents
 
 **Euclidean domains** (the original content of this repository)

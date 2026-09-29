@@ -74,7 +74,14 @@ import Kopt.GPData
 import Kopt.Optimality
 import Kopt.SynthProperties
 import Kopt.Unitary
+import Kopt.Unitary2
 import Kopt.MatAdj
+import Kopt.GateUnitary
+import Kopt.PatternFacts
+import Kopt.NormalForms
+import Kopt.OptSteps
+import Kopt.OptPotential
+import Kopt.OptInduction
 import Kopt.Properties.Algebra
 import Kopt.Properties.Gamma
 import Kopt.Properties.DyadicTools
