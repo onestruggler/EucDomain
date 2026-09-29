@@ -324,6 +324,12 @@ remark-II-10 : (c : Circuit) -> gp-circuit? c ≡ true -> (A : Op) -> lde (⟦ c
 remark-II-10 c h A = trans (cong (λ m -> lde (m * A)) (proj₂ (kfree-gp c h)))
                            (lde-gp-left (proj₁ (kfree-gp c h)) A)
 
+-- The same on the right. Kopt.PatternFacts needs this form: the level
+-- data of Lemma IV.1 multiplies by a permutation on both sides.
+remark-II-10-right : (c : Circuit) -> gp-circuit? c ≡ true -> (A : Op) -> lde (A * ⟦ c ⟧) ≡ lde A
+remark-II-10-right c h A = trans (cong (λ m -> lde (A * m)) (proj₂ (kfree-gp c h)))
+                                (lde-gp-right A (proj₁ (kfree-gp c h)))
+
 -- ----------------------------------------------------------------------
 -- * Circuits for generalized permutations, by exhaustive check
 --

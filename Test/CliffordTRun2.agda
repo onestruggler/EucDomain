@@ -10,6 +10,7 @@ module Test.CliffordTRun2 where
 open import IO
 import Data.Bool.Base
 open import Data.List.Base as List using (List ; [] ; _∷_)
+open import Data.Bool.ListAction using (all)
 open import Data.Maybe.Base using (Maybe ; just ; nothing)
 open import Data.Nat.Base as Nat using (ℕ)
 open import Data.Integer.Base as Int using (ℤ ; +_)
@@ -75,8 +76,8 @@ lines =
   showL (synthesis-nqubit-alt m8) ∷
   showList (λ _ n -> showM (normalform-unpack n)) (codes 3 5 300 3 38) ∷
   -- Round trips: gate list → matrix → synthesized gates → matrix.
-  showB (List.all (λ n -> u2 (synthesis-u2 (u2 (to-gates n))) == u2 (to-gates n)) (codes 3 3 120 0 37)) ∷
-  showB (List.all (λ n -> so3 (synthesis-bloch (so3 (to-gates n))) == so3 (to-gates n)) (codes 3 3 120 0 37)) ∷
+  showB (all (λ n -> u2 (synthesis-u2 (u2 (to-gates n))) == u2 (to-gates n)) (codes 3 3 120 0 37)) ∷
+  showB (all (λ n -> so3 (synthesis-bloch (so3 (to-gates n))) == so3 (to-gates n)) (codes 3 3 120 0 37)) ∷
   []
   where
     tc : Axis × Clifford -> String

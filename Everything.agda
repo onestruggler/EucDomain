@@ -73,6 +73,7 @@ import Kopt.Descent
 import Kopt.GPData
 import Kopt.Optimality
 import Kopt.SynthProperties
+import Kopt.CircuitSem
 import Kopt.Unitary
 import Kopt.Unitary2
 import Kopt.MatAdj
