@@ -138,37 +138,39 @@ gz-↑ (suc (suc l)) = trans (cong twoi* (gz-↑ l)) (twoi-mul ((γ {ZComplex}) 
 -- ----------------------------------------------------------------------
 -- * Extensionality for 4-vectors and 4×4 matrices
 
-private
-  vec4-ext : {A : Set} (v w : Vector 4 A) -> ((k : Ix) -> vsel k v ≡ vsel k w) -> v ≡ w
-  vec4-ext (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) h = go (h ι0) (h ι1) (h ι2) (h ι3)
+-- These are the generic 4×4 utilities. They are public: the proofs of
+-- Section IV that are still to come state their lemmas entrywise, and
+-- mat4-ext is how an entrywise statement becomes a matrix equation.
+vec4-ext : {A : Set} (v w : Vector 4 A) -> ((k : Ix) -> vsel k v ≡ vsel k w) -> v ≡ w
+vec4-ext (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) h = go (h ι0) (h ι1) (h ι2) (h ι3)
     where
       go : a₀ ≡ b₀ -> a₁ ≡ b₁ -> a₂ ≡ b₂ -> a₃ ≡ b₃ ->
            (Vector 4 _ ∋ (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) ≡ (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ [])
       go refl refl refl refl = refl
 
-  mat4-ext : {A : Set} (M N : Matrix 4 4 A) -> ((r c : Ix) -> ment r c M ≡ ment r c N) -> M ≡ N
-  mat4-ext (Matrix' cs) (Matrix' ds) h =
+mat4-ext : {A : Set} (M N : Matrix 4 4 A) -> ((r c : Ix) -> ment r c M ≡ ment r c N) -> M ≡ N
+mat4-ext (Matrix' cs) (Matrix' ds) h =
     cong Matrix' (vec4-ext cs ds (λ c -> vec4-ext (vsel c cs) (vsel c ds) (λ r -> h r c)))
 
-  vsel-map : {A B : Set} (f : A -> B) (k : Ix) (v : Vector 4 A) ->
+vsel-map : {A B : Set} (f : A -> B) (k : Ix) (v : Vector 4 A) ->
              vsel k (vector-map f v) ≡ f (vsel k v)
-  vsel-map f ι0 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) = refl
-  vsel-map f ι1 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) = refl
-  vsel-map f ι2 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) = refl
-  vsel-map f ι3 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) = refl
+vsel-map f ι0 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) = refl
+vsel-map f ι1 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) = refl
+vsel-map f ι2 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) = refl
+vsel-map f ι3 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) = refl
 
-  ment-map : {A B : Set} (f : A -> B) (M : Matrix 4 4 A) (r c : Ix) ->
+ment-map : {A B : Set} (f : A -> B) (M : Matrix 4 4 A) (r c : Ix) ->
              ment r c (matrix-map f M) ≡ f (ment r c M)
-  ment-map f (Matrix' cs) r c =
+ment-map f (Matrix' cs) r c =
     trans (cong (vsel r) (vsel-map (vector-map f) c cs)) (vsel-map f r (vsel c cs))
 
-  mcol-η : {A : Set} (M : Matrix 4 4 A) ->
+mcol-η : {A : Set} (M : Matrix 4 4 A) ->
            M ≡ Matrix' (mcol ι0 M ∷ mcol ι1 M ∷ mcol ι2 M ∷ mcol ι3 M ∷ [])
-  mcol-η (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) = refl
+mcol-η (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) = refl
 
-  mrow-η : {A : Set} (M : Matrix 4 4 A) (r : Ix) ->
+mrow-η : {A : Set} (M : Matrix 4 4 A) (r : Ix) ->
            mrow r M ≡ (ment r ι0 M ∷ ment r ι1 M ∷ ment r ι2 M ∷ ment r ι3 M ∷ [])
-  mrow-η (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) r = refl
+mrow-η (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) r = refl
 
 -- The residue matrix that lemma-six computes is the (1,l)-residue
 -- matrix of Kopt.Base.
@@ -181,6 +183,19 @@ rho1-integral l m = mat4-ext _ _ ent
       (trans (cong parityℤ[i] (ment-map (λ x -> to-whole (x * γ-pow l)) m r c))
       (trans (cong (λ z -> parityℤ[i] (to-whole (ment r c m * z))) (γ-pow-↑ l))
              (sym (entry-res1 m l r c))))
+
+-- The same at n = 2, which is what the refinements of Section IV B work
+-- with: ρˡ₂(A) is what lev-res of Kopt.Patterns records, and the
+-- normal forms are statements about it.
+rho2-integral : (l : ℕ) (m : Op) -> rho2-of (integral-matrix l m) ≡ residue-matrix l 2 m
+rho2-integral l m = mat4-ext _ _ ent
+  where
+    ent : (r c : Ix) -> ment r c (rho2-of (integral-matrix l m)) ≡ ment r c (residue-matrix l 2 m)
+    ent r c =
+      trans (ment-map (ρ 2) (integral-matrix l m) r c)
+      (trans (cong (ρ 2) (ment-map (λ x -> to-whole (x * γ-pow l)) m r c))
+      (trans (cong (λ z -> ρ 2 (to-whole (ment r c m * z))) (γ-pow-↑ l))
+             (sym (entry-res m 2 l r c))))
 
 -- ----------------------------------------------------------------------
 -- * Enumerations of ℤ₂ 4-vectors

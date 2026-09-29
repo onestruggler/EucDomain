@@ -272,6 +272,29 @@ module Entries (a₀ a₁ a₂ a₃ b₀ b₁ b₂ b₃ c₀ c₁ c₂ c₃ d₀
   e-res1 l ι3 ι2 = refl
   e-res1 l ι3 ι3 = refl
 
+  -- The same at any n: ρₙ of the Gaussian integer γˡ·Uᵣ꜀. (e-res1 is
+  -- the case n = 1, with parityℤ[i] where ρ 1 would carry a one-element
+  -- vector; Kopt.PatternFacts needs n = 2, where the pattern search of
+  -- Kopt.Patterns lives.)
+  e-res : (n l : ℕ) (r c : Ix) ->
+          ment r c (residue-matrix l n U) ≡ ρ n (to-whole (ment r c U * (γ↑ l)))
+  e-res n l ι0 ι0 = refl
+  e-res n l ι0 ι1 = refl
+  e-res n l ι0 ι2 = refl
+  e-res n l ι0 ι3 = refl
+  e-res n l ι1 ι0 = refl
+  e-res n l ι1 ι1 = refl
+  e-res n l ι1 ι2 = refl
+  e-res n l ι1 ι3 = refl
+  e-res n l ι2 ι0 = refl
+  e-res n l ι2 ι1 = refl
+  e-res n l ι2 ι2 = refl
+  e-res n l ι2 ι3 = refl
+  e-res n l ι3 ι0 = refl
+  e-res n l ι3 ι1 = refl
+  e-res n l ι3 ι2 = refl
+  e-res n l ι3 ι3 = refl
+
   -- Every entry has lde at most that of the matrix.
   e-lde : (r c : Ix) -> lde (ment r c U) Nat.≤ lde U
   e-lde ι0 ι0 = NatP.≤-trans (lde4-0 a₀ a₁ a₂ a₃) (lde4-0 cA cB cC cD)
@@ -342,6 +365,16 @@ entry-res1′ M l r c =
                (sym (matrix-η M)) (WD.e-res1 M l r c))
         (cong (λ z -> parityℤ[i] (to-whole (ment r c M * z))) (γ↑-↑ l))
 
+-- The same at any n, which is what a statement about the pattern search
+-- of Kopt.Patterns needs (it works at n = 2).
+entry-res′ : (M : Op) (n l : ℕ) (r c : Ix) ->
+             ment r c (residue-matrix l n M) ≡ ρ n (to-whole (ment r c M * (γ ↑ l)))
+entry-res′ M n l r c =
+  trans (subst (λ N -> ment r c (residue-matrix l n N)
+                         ≡ ρ n (to-whole (ment r c N * (γ↑ l))))
+               (sym (matrix-η M)) (WD.e-res M n l r c))
+        (cong (λ z -> ρ n (to-whole (ment r c M * z))) (γ↑-↑ l))
+
 entry-lde′ : (M : Op) (r c : Ix) -> lde (ment r c M) Nat.≤ lde M
 entry-lde′ M r c = subst (λ N -> lde (ment r c N) Nat.≤ lde N) (sym (matrix-η M))
                         (WD.e-lde M r c)
@@ -366,6 +399,10 @@ abstract
   entry-res1 : (M : Op) (l : ℕ) (r c : Ix) ->
                ment r c (residue1-matrix l M) ≡ parityℤ[i] (to-whole (ment r c M * (γ ↑ l)))
   entry-res1 = entry-res1′
+
+  entry-res : (M : Op) (n l : ℕ) (r c : Ix) ->
+              ment r c (residue-matrix l n M) ≡ ρ n (to-whole (ment r c M * (γ ↑ l)))
+  entry-res = entry-res′
 
   entry-lde : (M : Op) (r c : Ix) -> lde (ment r c M) Nat.≤ lde M
   entry-lde = entry-lde′
