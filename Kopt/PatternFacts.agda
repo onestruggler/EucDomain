@@ -74,7 +74,7 @@ open import Kopt.Permutations
 open import Kopt.Patterns
 open import Kopt.Unitary2
 open import Kopt.Descent using (_∈ˡ_ ; here ; there ; all-of ; all-of-∈ ; filt ; ∈-filt ;
-                               ∈-map ; ∈-++ˡ ; ∈-++ʳ)
+                               ∈-map ; ∈-++ˡ ; ∈-++ʳ ; ∧-true ; ∧-true₃)
 
 private
   module ℤS = IntSolver.+-*-Solver
@@ -372,20 +372,34 @@ search-of M = Search.search-x all-perms (Search.cols-table (rows-4 M))
 search-i-of : Matrix 4 4 Z2 -> Maybe Tuple4
 search-i-of M = Search.search-i all-perms (Search.encode-rows (rows-4 M))
 
-found? : Maybe Search.Found -> Bool
-found? nothing = false
-found? (just (p , x , y)) = not (p == I)
+-- The leaf of the search, with everything a proof needs from it. Besides
+-- finding a pattern other than (i), the two permutations returned really
+-- do carry the matrix to that pattern, and the matrix is that pattern
+-- permuted back. The first of those is what a statement about the
+-- operator the algorithm builds from the level data needs; the second is
+-- the statement that the matrix lies in the orbit of the pattern. Both
+-- hold on every candidate, so the two checks below are still refl.
+found? : Matrix 4 4 Z2 -> Maybe Search.Found -> Bool
+found? M nothing = false
+found? M (just (p , x , y)) =
+     not (p == I)
+   ∧ (permute-matrix x y M == pattern-matrix p)
+   ∧ (M == permute-matrix (perm-inverse x) (perm-inverse y) (pattern-matrix p))
 
-found-i? : Maybe Tuple4 -> Bool
-found-i? nothing = false
-found-i? (just x) = true
+found-i? : Matrix 4 4 Z2 -> Maybe Tuple4 -> Bool
+found-i? M nothing = false
+found-i? M (just x) =
+     (permute-matrix x Search.identity-perm M == pattern-matrix I)
+   ∧ (M == permute-matrix (perm-inverse x) Search.identity-perm (pattern-matrix I))
 
--- At lde > 0: the search finds a pattern, and it is not (i).
-pos-check : all-of (λ M -> found? (search-of M)) pos-cand ≡ true
+-- At lde > 0: the search finds a pattern, it is not (i), and it is the
+-- pattern of the permuted matrix.
+pos-check : all-of (λ M -> found? M (search-of M)) pos-cand ≡ true
 pos-check = refl
 
--- At lde 0: the search of the lde-0 branch succeeds.
-zero-check : all-of (λ M -> found-i? (search-i-of M)) zero-cand ≡ true
+-- At lde 0: the search of the lde-0 branch succeeds, and the permutation
+-- it returns carries the matrix to the identity pattern.
+zero-check : all-of (λ M -> found-i? M (search-i-of M)) zero-cand ≡ true
 zero-check = refl
 
 -- ----------------------------------------------------------------------
@@ -461,8 +475,9 @@ module _ (U : Op) (hu : IsUnitary U) (k : ℕ) (hl : lde U ≡ suc k) where
                                  (∈-even-v4 _ (ev-col ι2)) (∈-even-v4 _ (ev-col ι3)))
 
   -- The search of lemma-six, run on ρˡ₁(U), finds a pattern ≠ (i).
-  pos-found : found? (search-of (residue1-matrix (suc k) U)) ≡ true
-  pos-found = all-of-∈ (λ M -> found? (search-of M)) pos-cand pos-check (∈-filt pos-ok? mem-all ok)
+  pos-found : found? R (search-of R) ≡ true
+  pos-found = all-of-∈ (λ M -> found? M (search-of M)) pos-cand pos-check
+                       (∈-filt pos-ok? mem-all ok)
 
 -- ----------------------------------------------------------------------
 -- ** lde 0
@@ -622,8 +637,9 @@ module _ (U : Op) (hu : IsUnitary U) (hl : lde U ≡ 0) where
     ok = ∧-intro (w1-row ι0) (∧-intro (w1-row ι1) (∧-intro (w1-row ι2) (w1-row ι3)))
 
   -- The lde-0 branch of lemma-six succeeds on ρ⁰₁(U).
-  zero-found : found-i? (search-i-of (residue1-matrix 0 U)) ≡ true
-  zero-found = all-of-∈ (λ M -> found-i? (search-i-of M)) zero-cand zero-check (∈-filt unit-rows? mem-all ok)
+  zero-found : found-i? R₀ (search-i-of R₀) ≡ true
+  zero-found = all-of-∈ (λ M -> found-i? M (search-i-of M)) zero-cand zero-check
+                        (∈-filt unit-rows? mem-all ok)
 
 -- ----------------------------------------------------------------------
 -- * Lemma IV.1
@@ -651,27 +667,29 @@ level-at-zero A =
        (rho1-integral 0 A)
 
 private
-  not-I-aux : (l : ℕ) (W : Matrix 4 4 ZComplex) (s : Maybe Search.Found) -> found? s ≡ true ->
-              ¬ (patof-of (Level.level-from-s (suc l) s W) ≡ just I)
-  not-I-aux l W nothing h e = ⊥-elim (false≢true h)
-  not-I-aux l W (just (p , x , y)) h e =
-    true≢false (trans (sym h) (cong (λ q -> not (q == I)) (just-inj e)))
+  not-I-aux : (l : ℕ) (R : Matrix 4 4 Z2) (W : Matrix 4 4 ZComplex) (s : Maybe Search.Found) ->
+              found? R s ≡ true -> ¬ (patof-of (Level.level-from-s (suc l) s W) ≡ just I)
+  not-I-aux l R W nothing h e = ⊥-elim (false≢true h)
+  not-I-aux l R W (just (p , x , y)) h e =
+    true≢false (trans (sym (proj₁ (∧-true h))) (cong (λ q -> not (q == I)) (just-inj e)))
 
-  at-0-aux : (W : Matrix 4 4 ZComplex) (s : Maybe Tuple4) -> found-i? s ≡ true ->
-             patof-of (Level.level-from-0 s W) ≡ just I
-  at-0-aux W nothing h = ⊥-elim (false≢true h)
-  at-0-aux W (just x) h = refl
+  at-0-aux : (R : Matrix 4 4 Z2) (W : Matrix 4 4 ZComplex) (s : Maybe Tuple4) ->
+             found-i? R s ≡ true -> patof-of (Level.level-from-0 s W) ≡ just I
+  at-0-aux R W nothing h = ⊥-elim (false≢true h)
+  at-0-aux R W (just x) h = refl
 
-  just-aux-s : (l : ℕ) (W : Matrix 4 4 ZComplex) (s : Maybe Search.Found) -> found? s ≡ true ->
+  just-aux-s : (l : ℕ) (R : Matrix 4 4 Z2) (W : Matrix 4 4 ZComplex) (s : Maybe Search.Found) ->
+               found? R s ≡ true ->
                Σ[ ld ∈ LevelData ] Level.level-from-s (suc l) s W ≡ just ld
-  just-aux-s l W nothing h = ⊥-elim (false≢true h)
-  just-aux-s l W (just (p , x , y)) h =
+  just-aux-s l R W nothing h = ⊥-elim (false≢true h)
+  just-aux-s l R W (just (p , x , y)) h =
     level-data (suc l) p x y (permute-matrix x y (rho2-of W)) , refl
 
-  just-aux-0 : (W : Matrix 4 4 ZComplex) (s : Maybe Tuple4) -> found-i? s ≡ true ->
+  just-aux-0 : (R : Matrix 4 4 Z2) (W : Matrix 4 4 ZComplex) (s : Maybe Tuple4) ->
+               found-i? R s ≡ true ->
                Σ[ ld ∈ LevelData ] Level.level-from-0 s W ≡ just ld
-  just-aux-0 W nothing h = ⊥-elim (false≢true h)
-  just-aux-0 W (just x) h =
+  just-aux-0 R W nothing h = ⊥-elim (false≢true h)
+  just-aux-0 R W (just x) h =
     level-data 0 I x Search.identity-perm
                (permute-matrix x Search.identity-perm (rho2-of W)) , refl
 
@@ -679,12 +697,14 @@ private
 patof-at-0 : (A : Op) -> IsUnitary A -> lde A ≡ 0 -> patof A ≡ just I
 patof-at-0 A hu hl =
   trans (trans (cong (λ n -> patof-of (level-at n A)) hl) (cong patof-of (level-at-zero A)))
-        (at-0-aux (integral-matrix 0 A) (search-i-of (residue1-matrix 0 A)) (zero-found A hu hl))
+        (at-0-aux (residue1-matrix 0 A) (integral-matrix 0 A)
+                  (search-i-of (residue1-matrix 0 A)) (zero-found A hu hl))
 
 -- At lde > 0 the pattern is not (i).
 patof-not-I : (A : Op) -> IsUnitary A -> (k : ℕ) -> lde A ≡ suc k -> ¬ (patof A ≡ just I)
 patof-not-I A hu k hl e =
-  not-I-aux k (integral-matrix (suc k) A) (search-of (residue1-matrix (suc k) A))
+  not-I-aux k (residue1-matrix (suc k) A) (integral-matrix (suc k) A)
+              (search-of (residue1-matrix (suc k) A))
             (pos-found A hu k hl)
             (trans (sym (trans (cong (λ n -> patof-of (level-at n A)) hl)
                                (cong patof-of (level-at-suc A k)))) e)
@@ -708,14 +728,15 @@ level-of-just : (A : Op) -> IsUnitary A -> Σ[ ld ∈ LevelData ] level-of A ≡
 level-of-just A hu = go (lde A) refl
   where
     go : (n : ℕ) -> lde A ≡ n -> Σ[ ld ∈ LevelData ] level-of A ≡ just ld
-    go zero h = fix h (just-aux-0 (integral-matrix 0 A) (search-i-of (residue1-matrix 0 A))
+    go zero h = fix h (just-aux-0 (residue1-matrix 0 A) (integral-matrix 0 A)
+                                  (search-i-of (residue1-matrix 0 A))
                                   (zero-found A hu h))
       where
         fix : lde A ≡ 0 -> Σ[ ld ∈ LevelData ] Level.level-from-0 (search-i-of (residue1-matrix 0 A))
                                                 (integral-matrix 0 A) ≡ just ld ->
               Σ[ ld ∈ LevelData ] level-of A ≡ just ld
         fix h0 (ld , eld) = ld , trans (trans (cong (λ n -> level-at n A) h0) (level-at-zero A)) eld
-    go (suc k) h = fix h (just-aux-s k (integral-matrix (suc k) A)
+    go (suc k) h = fix h (just-aux-s k (residue1-matrix (suc k) A) (integral-matrix (suc k) A)
                                      (search-of (residue1-matrix (suc k) A))
                                      (pos-found A hu k h))
       where
@@ -739,3 +760,85 @@ patof-just A hu = go (level-of-just A hu)
   where
     go : Σ[ ld ∈ LevelData ] level-of A ≡ just ld -> Σ[ p ∈ SixCases ] patof A ≡ just p
     go (ld , e) = lev-pat ld , cong patof-of e
+
+-- ----------------------------------------------------------------------
+-- * The search is sound
+--
+-- What the two checks above establish beyond the existence of a pattern:
+-- the permutations the search returns really do carry ρˡ₁(A) to the
+-- pattern, and ρˡ₁(A) is that pattern permuted back. Every proof about
+-- the operator that the algorithm builds from the level data starts
+-- here, since the level data is all that is known about the two
+-- permutations.
+
+private
+  -- The three conjuncts of found?, with their types written out: left to
+  -- unification, ∧-true cannot tell how to split the boolean.
+  found-parts : (R : Matrix 4 4 Z2) (p : SixCases) (x y : Tuple4) ->
+                found? R (just (p , x , y)) ≡ true ->
+                (not (p == I) ≡ true)
+                  × (((permute-matrix x y R == pattern-matrix p) ≡ true)
+                  × ((R == permute-matrix (perm-inverse x) (perm-inverse y)
+                                          (pattern-matrix p)) ≡ true))
+  found-parts R p x y h = ∧-true₃ h
+
+  found-i-parts : (R : Matrix 4 4 Z2) (x : Tuple4) -> found-i? R (just x) ≡ true ->
+                  ((permute-matrix x Search.identity-perm R == pattern-matrix I) ≡ true)
+                    × ((R == permute-matrix (perm-inverse x) Search.identity-perm
+                                            (pattern-matrix I)) ≡ true)
+  found-i-parts R x h = ∧-true h
+
+  sound-aux : (l : ℕ) (R : Matrix 4 4 Z2) (W : Matrix 4 4 ZComplex) (s : Maybe Search.Found) ->
+              found? R s ≡ true -> (ld : LevelData) ->
+              Level.level-from-s (suc l) s W ≡ just ld ->
+              (permute-matrix (lev-x ld) (lev-y ld) R ≡ pattern-matrix (lev-pat ld))
+                × (R ≡ permute-matrix (perm-inverse (lev-x ld)) (perm-inverse (lev-y ld))
+                                      (pattern-matrix (lev-pat ld)))
+  sound-aux l R W nothing h ld e = ⊥-elim (false≢true h)
+  sound-aux l R W (just (p , x , y)) h ld e =
+    subst (λ d -> (permute-matrix (lev-x d) (lev-y d) R ≡ pattern-matrix (lev-pat d))
+                    × (R ≡ permute-matrix (perm-inverse (lev-x d)) (perm-inverse (lev-y d))
+                                          (pattern-matrix (lev-pat d))))
+          (just-inj e)
+          (==⇒≡ (proj₁ (proj₂ (found-parts R p x y h))) ,
+           ==⇒≡ (proj₂ (proj₂ (found-parts R p x y h))))
+
+  sound-aux-0 : (R : Matrix 4 4 Z2) (W : Matrix 4 4 ZComplex) (s : Maybe Tuple4) ->
+                found-i? R s ≡ true -> (ld : LevelData) ->
+                Level.level-from-0 s W ≡ just ld ->
+                (permute-matrix (lev-x ld) (lev-y ld) R ≡ pattern-matrix (lev-pat ld))
+                  × (R ≡ permute-matrix (perm-inverse (lev-x ld)) (perm-inverse (lev-y ld))
+                                        (pattern-matrix (lev-pat ld)))
+  sound-aux-0 R W nothing h ld e = ⊥-elim (false≢true h)
+  sound-aux-0 R W (just x) h ld e =
+    subst (λ d -> (permute-matrix (lev-x d) (lev-y d) R ≡ pattern-matrix (lev-pat d))
+                    × (R ≡ permute-matrix (perm-inverse (lev-x d)) (perm-inverse (lev-y d))
+                                          (pattern-matrix (lev-pat d))))
+          (just-inj e)
+          (==⇒≡ (proj₁ (found-i-parts R x h)) , ==⇒≡ (proj₂ (found-i-parts R x h)))
+
+-- At a positive lde: ρˡ₁(A) permuted by the level data is the pattern.
+level-sound-pos : (A : Op) -> IsUnitary A -> (k : ℕ) (ld : LevelData) -> lde A ≡ suc k ->
+                  level-at (suc k) A ≡ just ld ->
+                  (permute-matrix (lev-x ld) (lev-y ld) (residue1-matrix (suc k) A)
+                     ≡ pattern-matrix (lev-pat ld))
+                    × (residue1-matrix (suc k) A
+                         ≡ permute-matrix (perm-inverse (lev-x ld)) (perm-inverse (lev-y ld))
+                                          (pattern-matrix (lev-pat ld)))
+level-sound-pos A hu k ld hl e =
+  sound-aux k (residue1-matrix (suc k) A) (integral-matrix (suc k) A)
+            (search-of (residue1-matrix (suc k) A)) (pos-found A hu k hl) ld
+            (trans (sym (level-at-suc A k)) e)
+
+-- At lde 0: the same, with the identity pattern.
+level-sound-zero : (A : Op) -> IsUnitary A -> (ld : LevelData) -> lde A ≡ 0 ->
+                   level-at 0 A ≡ just ld ->
+                   (permute-matrix (lev-x ld) (lev-y ld) (residue1-matrix 0 A)
+                      ≡ pattern-matrix (lev-pat ld))
+                     × (residue1-matrix 0 A
+                          ≡ permute-matrix (perm-inverse (lev-x ld)) (perm-inverse (lev-y ld))
+                                           (pattern-matrix (lev-pat ld)))
+level-sound-zero A hu ld hl e =
+  sound-aux-0 (residue1-matrix 0 A) (integral-matrix 0 A)
+              (search-i-of (residue1-matrix 0 A)) (zero-found A hu hl) ld
+              (trans (sym (level-at-zero A)) e)

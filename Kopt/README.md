@@ -70,6 +70,10 @@ and the combinatorial half of Lemma IV.1 (`Kopt.PatternFacts.pos-check`, `zero-c
 `lemma-six` is run on every 4×4 matrix over ℤ₂ that the residues of a unitary can be — those with
 MᵀM = MMᵀ = 0 that are nonzero, out of the 4096 with even columns, at lde > 0, and the 24 permutation
 matrices at lde 0.
+Those two checks also establish that the search is *sound*: the two permutations it returns carry the
+matrix to the pattern, and the matrix is that pattern permuted back (`level-sound-pos`,
+`level-sound-zero`). That is where a proof about the operator the algorithm builds from the level data
+has to start, since the level data is all that is known about the permutations.
 
 Checked by execution only: Theorem V.9's lower bound rests on "every two-qubit Clifford needs ≤ 2 K
 gates", verified by a BFS producing exactly 46080 elements — the whole Clifford group with phases —
