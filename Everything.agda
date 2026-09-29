@@ -130,3 +130,12 @@ import GauInt.Matrix.Gram
 import GauInt.Matrix.Euc
 import GauInt.Matrix.Integer
 import GauInt.Matrix.Clearing
+import GauInt.Matrix.Presentation
+import GauInt.Matrix.Denominator
+import GauInt.Matrix.Normalization
+import GauInt.Matrix.Normalization.Minimal
+import GauInt.Matrix.Normalization.Gram
+import GauInt.Matrix.Normalization.Homogeneous
+import GauInt.Matrix.Normalization.Factor
+import GauInt.Matrix.Homogeneous
+import GauInt.Matrix.Dyadic
