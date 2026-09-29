@@ -6,7 +6,7 @@ module GauInt.Units where
 open import Quantum.Synthesis.Ring using (ZComplex; Cplx; _[i])
 open import Instances as TC using (_+_; _-_; _*_; -_; 0#; 1#)
 open _[i] using (re; im)
-open import GauInt.Algebra using (Unit)
+open import GauInt.Algebra using (Unit; *-comm; conj-involutive)
 open import GauInt.NormParity using (norm-product-real)
 open import Integer.Squares using (square-nonnegative; small-square)
 open import Finite.Check using (checkFin; decAll)
@@ -19,7 +19,20 @@ open import Data.Vec.Base using (Vec; lookup; []; _∷_)
 open import Data.Unit using (tt)
 open import Data.Product using (Σ; Σ-syntax; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂; subst)
+open import Data.Empty using (⊥)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; sym; trans; cong; cong₂; subst)
+
+-- Units are nonzero, and conjugation reflects units and zero.
+unit-nonzero : ∀ z → Unit z → z ≢ 0#
+unit-nonzero z hu hz = bad (trans (sym (cong (λ z → z * TC.adj z) hz)) hu)
+  where bad : 0# ≡ 1# → ⊥; bad ()
+
+conjugate-unit : ∀ z → Unit (TC.adj z) → Unit z
+conjugate-unit z hu = trans (*-comm z (TC.adj z))
+  (trans (cong (TC.adj z *_) (sym (conj-involutive z))) hu)
+
+conjugate-zero : ∀ (z : ZComplex) → TC.adj z ≡ 0# → z ≡ 0#
+conjugate-zero z h = trans (sym (conj-involutive z)) (cong TC.adj h)
 
 phaseToZI : Fin 4 → ZComplex
 phaseToZI 0F = 1#

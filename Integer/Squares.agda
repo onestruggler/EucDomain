@@ -4,6 +4,7 @@ open import Data.Nat using (ℕ; zero; suc; z≤n; s≤s)
 import Data.Nat as N
 import Data.Nat.Properties as NP
 open import Data.Fin using (Fin; zero; suc)
+open import Data.Fin.Patterns using (0F; 1F; 2F)
 open import Data.Integer using (ℤ; +_; -[1+_]; +≤+)
 import Data.Integer as Z
 import Data.Integer.Properties as ZP
@@ -28,4 +29,16 @@ small-square (+ suc (suc n)) (+≤+ h) = ⊥-elim (bad (NP.≤-trans (nat-square
 small-square -[1+ zero ] h = inj₂ (inj₂ refl)
 small-square -[1+ suc n ] (+≤+ h) = ⊥-elim (bad (NP.≤-trans (nat-square-large n) h))
   where bad : 2 N.≤ 1 → ⊥; bad (s≤s ())
+
+-- The three integers of square at most one, indexed by Fin 3.
+entry : Fin 3 → ℤ
+entry 0F = + 0
+entry 1F = + 1
+entry 2F = -[1+ 0 ]
+
+entryCode : ∀ x → x Z.* x Z.≤ + 1 → Σ[ a ∈ Fin 3 ] entry a ≡ x
+entryCode x h with small-square x h
+... | inj₁ hz = 0F , sym hz
+... | inj₂ (inj₁ hp) = 1F , sym hp
+... | inj₂ (inj₂ hn) = 2F , sym hn
 

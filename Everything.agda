@@ -139,3 +139,16 @@ import GauInt.Matrix.Normalization.Homogeneous
 import GauInt.Matrix.Normalization.Factor
 import GauInt.Matrix.Homogeneous
 import GauInt.Matrix.Dyadic
+import GauInt.Matrix.Congruence
+import GauInt.Matrix.Monomial
+import GauInt.Matrix.Monomial.Gram
+import GauInt.Matrix.Monomial.Unit
+import GauInt.Matrix.Exterior
+import GauInt.Matrix.Exterior.CauchyBinet
+import GauInt.Matrix.Exterior.Minors
+import GauInt.Matrix.Integer.Orthogonality
+import GauInt.Matrix.Integer.Residues
+import GauInt.Matrix.Integer.UnitRows
+import GauInt.Matrix.UnitSupport
+import GauInt.Matrix.Trace
+import GauInt.Matrix.RowColumnGram
