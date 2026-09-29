@@ -52,6 +52,7 @@ open import Literals
 open import Quantum.Synthesis.Ring
 open import Quantum.Synthesis.Matrix
 open import Kopt.Base
+open import Kopt.GammaPow
 open import Kopt.Gates
 open import Kopt.Permutations
 
@@ -249,9 +250,12 @@ private
   scale-to-whole g x = to-whole (x * g)
 
 -- γˡ·A, as a matrix over ℤ[i]. This is to-whole (lde-factor A l) of
--- Kopt.Base, but γˡ is computed once instead of once per entry.
+-- Kopt.Base, but γˡ is computed once instead of once per entry, and in
+-- ℤ[i] rather than in 𝔻[i] (Kopt.GammaPow.γ-pow; the equality
+-- γ-pow l = γ↑l is Kopt.PatternFacts.γ-pow-↑, which is what lets the
+-- pattern of an operator be related to its residues).
 integral-matrix : ℕ -> Matrix 4 4 DComplex -> Matrix 4 4 ZComplex
-integral-matrix l m = matrix-map (scale-to-whole (γ ^ l)) m
+integral-matrix l m = matrix-map (scale-to-whole (γ-pow l)) m
 
 -- ρˡ₁(A) and ρˡ₂(A) from γˡ·A.
 rho1-of : Matrix 4 4 ZComplex -> Matrix 4 4 Z2
@@ -291,7 +295,14 @@ permute-matrix x y (Matrix' cs) = permute-aux (perm-inverse x) y cs
 -- four rows are packed into a 16-bit number. Comparing a candidate
 -- with the seven patterns is then a comparison of two numbers.
 
-private
+-- The encoding and the search live in a module of their own rather
+-- than in a private block, and every case analysis is done by an
+-- auxiliary function taking the scrutinee as an argument rather than
+-- by a `with`. Both are needed by Kopt.PatternFacts, which proves that
+-- the search is sound (the permuted residue matrix really is the
+-- pattern found) and complete on the residue matrices that a unitary
+-- can have. Neither changes what is computed.
+module Search where
   z2-bit : Z2 -> ℕ
   z2-bit Even = 0
   z2-bit Odd = 1
@@ -346,30 +357,54 @@ private
   code-i = encode-matrix (pattern-matrix I)
 
   case-of-code : ℕ -> List (ℕ × SixCases) -> Maybe SixCases
+  case-of-code-aux : Bool -> ℕ -> SixCases -> List (ℕ × SixCases) -> Maybe SixCases
+
   case-of-code c [] = nothing
-  case-of-code c ((c' , p) ∷ ps) = if c Nat.≡ᵇ c' then just p else case-of-code c ps
+  case-of-code c ((c' , p) ∷ ps) = case-of-code-aux (c Nat.≡ᵇ c') c p ps
+
+  case-of-code-aux true c p ps = just p
+  case-of-code-aux false c p ps = case-of-code c ps
 
   -- The inner loop of lemma_six: for a fixed left permutation x (with
   -- inverse xi), find the first right permutation y and pattern p
   -- with ρˡ₁(P_x·A·P_y) = p.
-  search-y : Tuple4 -> Tuple4 -> List (Tuple4 × Enc4) -> Maybe (SixCases × Tuple4 × Tuple4)
-  search-y x xi [] = nothing
-  search-y x xi ((y , e) ∷ rest) with case-of-code (lar-code e xi) pattern-codes
-  ... | just p = just (p , x , y)
-  ... | nothing = search-y x xi rest
+  Found : Set
+  Found = SixCases × Tuple4 × Tuple4
 
-  search-x : List Tuple4 -> List (Tuple4 × Enc4) -> Maybe (SixCases × Tuple4 × Tuple4)
+  search-y : Tuple4 -> Tuple4 -> List (Tuple4 × Enc4) -> Maybe Found
+  search-y-aux : Maybe SixCases -> Tuple4 -> Tuple4 -> Tuple4 -> List (Tuple4 × Enc4) -> Maybe Found
+
+  search-y x xi [] = nothing
+  search-y x xi ((y , e) ∷ rest) =
+    search-y-aux (case-of-code (lar-code e xi) pattern-codes) x xi y rest
+
+  search-y-aux (just p) x xi y rest = just (p , x , y)
+  search-y-aux nothing x xi y rest = search-y x xi rest
+
+  search-x : List Tuple4 -> List (Tuple4 × Enc4) -> Maybe Found
+  search-x-aux : Maybe Found -> List Tuple4 -> List (Tuple4 × Enc4) -> Maybe Found
+
   search-x [] tbl = nothing
-  search-x (x ∷ xs) tbl with search-y x (perm-inverse x) tbl
-  ... | just r = just r
-  ... | nothing = search-x xs tbl
+  search-x (x ∷ xs) tbl = search-x-aux (search-y x (perm-inverse x) tbl) xs tbl
+
+  search-x-aux (just r) xs tbl = just r
+  search-x-aux nothing xs tbl = search-x xs tbl
 
   -- The lde-0 branch of lemma_six: find the first permutation x with
   -- ρ⁰₁(P_x·A) the identity pattern.
   search-i : List Tuple4 -> Enc4 -> Maybe Tuple4
+  search-i-aux : Bool -> Tuple4 -> List Tuple4 -> Enc4 -> Maybe Tuple4
+
   search-i [] e = nothing
-  search-i (x ∷ xs) e =
-    if lar-code e (perm-inverse x) Nat.≡ᵇ code-i then just x else search-i xs e
+  search-i (x ∷ xs) e = search-i-aux (lar-code e (perm-inverse x) Nat.≡ᵇ code-i) x xs e
+
+  search-i-aux true x xs e = just x
+  search-i-aux false x xs e = search-i xs e
+
+  -- The identity permutation, used as the right permutation of
+  -- Lemma IV.1 at lde 0.
+  identity-perm : Tuple4
+  identity-perm = 0 , 1 , 2 , 3
 
 -- ----------------------------------------------------------------------
 -- * The data of one level of the algorithm
@@ -393,21 +428,33 @@ lev-lcir lev-rcir : LevelData -> Circuit
 lev-lcir ld = perm-circuit-of (lev-x ld)
 lev-rcir ld = perm-circuit-of (lev-y ld)
 
-private
-  identity-perm : Tuple4
-  identity-perm = 0 , 1 , 2 , 3
+-- Again the case analyses are in auxiliary functions taking the
+-- scrutinee as an argument, and the module is public, so that
+-- Kopt.PatternFacts can reason about the outcome of the search.
+module Level where
+
+  -- The lde-0 branch: the pattern is (i) and the right permutation is
+  -- the identity.
+  level-from-0 : Maybe Tuple4 -> Matrix 4 4 ZComplex -> Maybe LevelData
+  level-from-0 nothing w = nothing
+  level-from-0 (just x) w =
+    just (level-data 0 I x Search.identity-perm
+                     (permute-matrix x Search.identity-perm (rho2-of w)))
+
+  level-from-s : ℕ -> Maybe Search.Found -> Matrix 4 4 ZComplex -> Maybe LevelData
+  level-from-s l nothing w = nothing
+  level-from-s l (just (p , x , y)) w =
+    just (level-data l p x y (permute-matrix x y (rho2-of w)))
 
   level-from : ℕ -> Matrix 4 4 ZComplex -> Maybe LevelData
-  level-from zero w with search-i all-perms (encode-rows (rows-4 (rho1-of w)))
-  ... | nothing = nothing
-  ... | just x = just (level-data 0 I x identity-perm (permute-matrix x identity-perm (rho2-of w)))
-  level-from l@(suc _) w with search-x all-perms (cols-table (rows-4 (rho1-of w)))
-  ... | nothing = nothing
-  ... | just (p , x , y) = just (level-data l p x y (permute-matrix x y (rho2-of w)))
+  level-from zero w =
+    level-from-0 (Search.search-i all-perms (Search.encode-rows (rows-4 (rho1-of w)))) w
+  level-from l@(suc _) w =
+    level-from-s l (Search.search-x all-perms (Search.cols-table (rows-4 (rho1-of w)))) w
 
 -- The level data of an operator whose lde is known to be l.
 level-at : ℕ -> Matrix 4 4 DComplex -> Maybe LevelData
-level-at l m = level-from l (integral-matrix l m)
+level-at l m = Level.level-from l (integral-matrix l m)
 
 -- The level data of an operator.
 level-of : Matrix 4 4 DComplex -> Maybe LevelData
@@ -422,17 +469,28 @@ level-of m = level-at (lde m) m
 -- makes ρ⁰₁ the identity (this is the authors' lemma_six). Returns
 -- nothing if A is not a two-qubit Clifford+CS operator (the authors'
 -- code raises an error).
+lemma-six-of : Maybe LevelData -> Maybe (SixCases × Circuit × Circuit)
+lemma-six-of nothing = nothing
+lemma-six-of (just ld) = just (lev-pat ld , lev-lcir ld , lev-rcir ld)
+
 lemma-six : Matrix 4 4 DComplex -> Maybe (SixCases × Circuit × Circuit)
-lemma-six m with level-of m
-... | nothing = nothing
-... | just ld = just (lev-pat ld , lev-lcir ld , lev-rcir ld)
+lemma-six m = lemma-six-of (level-of m)
 
 -- The pattern of an operator (the authors' cof; U4Di's patof returns
--- the pattern matrix instead).
+-- the pattern matrix instead). Again the case analysis is in an
+-- auxiliary function, so that the two defining equations
+--
+--   patof m ≡ just (lev-pat ld)   for level-of m ≡ just ld,
+--   patof m ≡ nothing             for level-of m ≡ nothing
+--
+-- are available outside this module (they are cong patof-of of the
+-- hypothesis).
+patof-of : Maybe LevelData -> Maybe SixCases
+patof-of nothing = nothing
+patof-of (just ld) = just (lev-pat ld)
+
 patof : Matrix 4 4 DComplex -> Maybe SixCases
-patof m with level-of m
-... | nothing = nothing
-... | just ld = just (lev-pat ld)
+patof m = patof-of (level-of m)
 
 -- The authors' name for patof.
 cof : Matrix 4 4 DComplex -> Maybe SixCases

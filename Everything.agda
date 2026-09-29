@@ -64,6 +64,7 @@ import Quantum.Synthesis.Ring.Properties.Z2
 -- Formalization of K-optimal two-qubit Clifford+CS synthesis
 -- (Bian and Feng), see Kopt/README.md.
 import Kopt.Base
+import Kopt.GammaPow
 import Kopt.Gates
 import Kopt.Permutations
 import Kopt.Patterns
@@ -72,6 +73,8 @@ import Kopt.Descent
 import Kopt.GPData
 import Kopt.Optimality
 import Kopt.SynthProperties
+import Kopt.Unitary
+import Kopt.MatAdj
 import Kopt.Properties.Algebra
 import Kopt.Properties.Gamma
 import Kopt.Properties.DyadicTools
