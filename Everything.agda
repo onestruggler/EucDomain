@@ -166,3 +166,4 @@ import GauInt.Gamma.Residue.Tables
 import Finite.BinaryMatrix
 import GauInt.Matrix.Integer.Binary
 import GauInt.Matrix.Binary
+import GauInt.Gamma.Residue.Cases
