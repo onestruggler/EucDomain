@@ -20,6 +20,7 @@ two-qubit operator is a `Matrix 4 4 DComplex`.
 | `Kopt.Patterns` | IV A–B | the six residue patterns, `lemma-six`, the refinements `refine-ii` … `refine-vi` and their ρ₂ normal forms |
 | `Kopt.GammaPow` | II | γˡ in ℤ[i], computed with ⌊l/2⌋ multiplications by γ² = 2i (a fast power that can be reasoned about, unlike the framework's `_^_`) |
 | `Kopt.Unitary` | IV A | unitarity of a `Matrix 4 4 DComplex` as an explicit hypothesis, and **Lemmas IV.2 and IV.3** at the residue level: the parity counts of the columns and rows of ρˡ₁ |
+| `Kopt.Unitary3` | IV A | **Lemmas IV.2 and IV.3 at ρ₂**: the same counting facts one residue digit up, which is the form the refinements of Section IV B are solved against (at positive lde all four ρ₂ inner products vanish) |
 | `Kopt.PatternFacts` | IV A | **Lemma IV.1**: every unitary over 𝔻[i] has one of the six patterns, and it has pattern (i) if and only if its lde is 0 |
 | `Kopt.MatAdj` | -- | (X·Y)† = Y†·X† and (X†)† = X for 4×4 matrices, which the library does not prove, and therefore that unitarity is closed under products and adjoints |
 | `Kopt.CircuitSem` | III C | the 24 Table I permutation circuits and the 256 diagonal circuits implement the matrices they are meant to, keyed on membership in `all-perms` -- which is all the residue search tells its caller about a permutation |
