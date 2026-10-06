@@ -77,6 +77,7 @@ import Kopt.CircuitSem
 import Kopt.ResPerm
 import Kopt.PermAdj
 import Kopt.PermIndex
+import Kopt.PermScatter
 import Kopt.Unitary
 import Kopt.Unitary2
 import Kopt.MatAdj
