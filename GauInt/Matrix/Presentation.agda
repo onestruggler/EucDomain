@@ -8,12 +8,13 @@ module GauInt.Matrix.Presentation where
 open import Quantum.Synthesis.Ring using (ZComplex)
 open import Instances as TC using (_+_; _*_)
 open import GauInt.Gamma using (powγ; powγ-add; powγ-cancel)
+open import GauInt.Algebra using (*-assoc)
 open import GauInt.Algebra.Swap using (swap; product-scale)
 open import GauInt.Matrix
 open import Data.Nat using (ℕ)
 import Data.Nat.Properties as NP
 open import Relation.Nullary using (Dec)
-open import Relation.Binary.PropositionalEquality using (_≡_; cong; cong₂; sym; trans)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
 record ScaledMatrix (n : ℕ) : Set where
   constructor scaled
@@ -38,6 +39,16 @@ equivalent-trans {A = A} {B} {C} h k i j = powγ-cancel (exponent B)
       (trans (swap (powγ (exponent C)) (powγ (exponent A)) (numerator B i j))
         (trans (cong (powγ (exponent A) *_) (k i j))
           (swap (powγ (exponent A)) (powγ (exponent B)) (numerator C i j))))))
+
+-- Bridges from numerator identities: equal exponents, or a γ-power moved
+-- from the numerator into the exponent.
+numerators-equivalent : ∀ {n} {M N : Mat n} {k l} → k ≡ l → M ≈ N → Equivalent (scaled M k) (scaled N l)
+numerators-equivalent {k = k} refl h = scale-cong (powγ k) h
+
+multiple-equivalent : ∀ {n} {M N : Mat n} {k l} d → k ≡ l + d → M ≈ scale (powγ d) N →
+  Equivalent (scaled M k) (scaled N l)
+multiple-equivalent {N = N} {l = l} d refl h i j = trans (cong (powγ l *_) (h i j))
+  (trans (sym (*-assoc (powγ l) (powγ d) (N i j))) (cong (_* N i j) (sym (powγ-add l d))))
 
 equivalent? : ∀ {n} (A B : ScaledMatrix n) → Dec (Equivalent A B)
 equivalent? A B = matrixEq (scale (powγ (exponent B)) (numerator A)) (scale (powγ (exponent A)) (numerator B))
