@@ -227,14 +227,49 @@ Kopt matrices, circuits, synthesis, or its source tree:
 | `GauInt.Parity`, `GauInt.NormParity`, `GauInt.Units` | Gaussian parity, norm parity, and classification of the four units |
 | `Integer.Sum`, `Integer.Congruence`, `Integer.Residues`, `Integer.Parity`, `Integer.Squares` | Finite sums, congruences, residue bounds, Boolean parity, and square bounds |
 | `Natural.Sum` | Finite natural sums and permutation/ordering laws |
+| `GauInt.TwoPower`, `GauInt.Algebra.Swap` | Powers of two, their integer counterparts and the norms of gamma powers; commutative rearrangements of products |
 | `Quantum.Synthesis.Ring.Properties.DyadicComplex` | Integer and Gaussian embeddings into dyadics, inverse-gamma scaling, denominator clearing |
 | `Finite.Check` | Generic finite proof-producing decision helpers used by residue certificates |
 
 `GauInt.Units.phaseToZI` is the scalar enumeration `1, i, -1, -i`.
 It is independent of circuit syntax. Integer parity and square bounds also
-have no Gaussian or matrix dependency. Matrix factorization and circuit
-optimality remain in the application. `Everything.agda` checks every module
-listed here against this library and the standard library alone.
+have no Gaussian or matrix dependency. Circuit semantics, the spin
+representation and optimality remain in the application. `Everything.agda`
+imports every module listed here and in the next section; they depend on
+this library and the standard library alone.
+
+## Matrix, residue and finite-search modules
+
+Kopt's problem-independent matrix, residue and finite-search theory also
+lives here. These modules mention no circuits, gate sets or synthesis
+problems, and none imports Kopt. Matrices are functions `Mat n` compared by
+pointwise equality `≈`, so no function extensionality is needed.
+
+| Modules | Content |
+| --- | --- |
+| `GauInt.Matrix` | Pointwise matrices over ℤ[i]: sums, identity, multiplication and scaling laws, transpose, decidable equality |
+| `GauInt.Matrix.Gram`, `.Trace`, `.RowColumnGram` | Adjoints, row and column Gram equations, traces; for square matrices a row-Gram equation `MM* = aI` implies the column-Gram equation |
+| `GauInt.Matrix.Euc` | Pointwise views of EucDomain's column-major `Matrix` over ℤ[i], with multiplication and scaling formulas |
+| `GauInt.Matrix.Integer` (`.Orthogonality`, `.Residues`, `.UnitRows`, `.Binary`) | Integer matrices and their Gaussian lifts: orthogonality, row weights and parities, unit rows, binary residues |
+| `GauInt.Matrix.Presentation` | γ-presentations `ScaledMatrix`: a numerator over ℤ[i] with an exponent k, standing for numerator / γ^k; cross-multiplication equivalence and its algebra |
+| `GauInt.Matrix.Denominator`, `.Normalization` (`.Minimal`, `.Gram`, `.Factor`, `.Homogeneous`), `.Homogeneous` | Primitive numerators, exact γ-cancellation, least denominators and their uniqueness, transport of Gram equations, factorization of normal forms, homogeneous γ-division and normal forms |
+| `GauInt.Matrix.Dyadic`, `.Clearing` | Actual 𝔻[i] matrices with `DenomExpMatrix` over `OnePlusIBase`, total and canonical decompositions, minimal exponents; denominator witnesses, reconstruction and the cross-multiplication criterion |
+| `GauInt.Matrix.Congruence` | Entrywise congruence modulo powers of γ (sums, products, adjoints, Gram matrices, division), γ-odd weights and eight-class residue codes of matrices |
+| `GauInt.Matrix.Monomial` (`.Gram`, `.Unit`) | Monomial matrices (a permutation with unit phases), their left and right actions on weights, divisibility, presentations and Gram equations; unit monomial rows |
+| `GauInt.Matrix.Exterior` (`.CauchyBinet`, `.Minors`) | The second compound (exterior square) of 4×4 matrices, its multiplicativity via the Cauchy–Binet identity, and 2×2 minor bookkeeping |
+| `GauInt.Matrix.UnitSupport`, `.ResidueArithmetic`, `.OddCoordinates`, `.RelativePhase`, `.Binary` | Rows of norm one, even binary overlaps from Gram equations, congruences of odd coordinates, relative unit phases modulo γ², binary residues of Gaussian matrices |
+| `GauInt.Gamma.Bit`, `.Divisibility`, `.ParityPairs`, `.UnitParity`, `.UnitNormal`, `.TypedResidue` | The γ-parity bit and its arithmetic; lowering congruence levels and divisibility of sums and differences; parity of integer pairs and of unit multiples; unit normal forms modulo γ³; residues of matrices modulo γ² |
+| `GauInt.Gamma.Residue.Arithmetic`, `.Residue.Tables`, `.Residue.Cases` | Arithmetic of the eight γ³ residue codes: kernel-checked tables, reflection of Gram decisions, and pattern-matched operations proved equal to the tables |
+| `Finite.Enumeration`, `.BooleanSearch`, `.FourSearch`, `.FourSearchFirst`, `.CachedFourSearch`, `.PrefixSearch`, `.SuffixSearch`, `.ScoreCache` | Proof-producing finite searches: pruned enumerations with completeness and soundness proofs, first-match lookup, suffix traversal, cached partitions, forced evaluation of score vectors |
+| `Finite.BinaryMatrix` | Boolean matrices of any size: weights, row overlaps, transposes and overlap constraints |
+
+Two of these files are generated by exporters in the Kopt repository and
+should be changed through them: `GauInt.Matrix.Exterior.CauchyBinet` by
+`Agda/tools/export_exterior_identity.py`, and `GauInt.Gamma.Residue.Tables`
+by the `render_codes` target of `Agda/tools/export_residue_tables.py`. Kopt's
+generated-source drift check compares both with regenerated text. Their proofs
+are ordinary kernel checks: the Cauchy–Binet identity by the ring solver and
+each table entry by evaluation.
 
 ## Testing
 
