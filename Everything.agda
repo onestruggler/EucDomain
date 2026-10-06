@@ -76,6 +76,7 @@ import Kopt.SynthProperties
 import Kopt.CircuitSem
 import Kopt.ResPerm
 import Kopt.PermAdj
+import Kopt.PermIndex
 import Kopt.Unitary
 import Kopt.Unitary2
 import Kopt.MatAdj

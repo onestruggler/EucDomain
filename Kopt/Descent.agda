@@ -867,6 +867,37 @@ gp-mat-comp G H = trans (mmul-≡ (gp-mat G) (gp-mat H)) (mat4-≡ (col p0) (col
                (selph (gp-ph H) j ·p selph (gp-ph G) (selp (gp-pos H) j)) ∎
       where open ≡-Reasoning
 
+
+-- ----------------------------------------------------------------------
+-- ** Multiplying on the right by a generalized permutation
+--
+-- Column j of A·G is i^{phase j} times column pos(j) of A: the columns
+-- of gp-mat G are unit vectors, and lcomb-unit above selects one column
+-- of A for each of them. This computes with the permutation data still a
+-- variable, which the left-hand version does not -- there the result's
+-- entry in a given row is the entry of A in whatever row the permutation
+-- sends there. Kopt.PermAdj reads the left multiplication as a right
+-- multiplication by the inverse instead of analysing the cases.
+
+-- Column p of a 4×4 matrix, indexed by Pos.
+mcol4 : Pos -> Op -> Vector 4 DComplex
+mcol4 p (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) = sel4v p a₀ a₁ a₂ a₃
+
+-- A with its columns permuted and scaled by G.
+gp-cols : Op -> GP -> Op
+gp-cols A G =
+  Matrix' ( smul (phase-val (selph (gp-ph G) p0)) (mcol4 (selp (gp-pos G) p0) A)
+          ∷ smul (phase-val (selph (gp-ph G) p1)) (mcol4 (selp (gp-pos G) p1) A)
+          ∷ smul (phase-val (selph (gp-ph G) p2)) (mcol4 (selp (gp-pos G) p2) A)
+          ∷ smul (phase-val (selph (gp-ph G) p3)) (mcol4 (selp (gp-pos G) p3) A) ∷ [])
+
+gp-mul-right : (A : Op) (G : GP) -> A * gp-mat G ≡ gp-cols A G
+gp-mul-right (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) G =
+  trans (mmul-≡ (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) (gp-mat G))
+        (mat4-≡ (lcomb-unit a₀ a₁ a₂ a₃ (selp (gp-pos G) p0) (selph (gp-ph G) p0))
+                (lcomb-unit a₀ a₁ a₂ a₃ (selp (gp-pos G) p1) (selph (gp-ph G) p1))
+                (lcomb-unit a₀ a₁ a₂ a₃ (selp (gp-pos G) p2) (selph (gp-ph G) p2))
+                (lcomb-unit a₀ a₁ a₂ a₃ (selp (gp-pos G) p3) (selph (gp-ph G) p3)))
 -- Two generalized permutations with the same data have the same matrix.
 gp-mat-cong : (G H : GP) ->
               ((j : Pos) -> selp (gp-pos G) j ≡ selp (gp-pos H) j) ->
