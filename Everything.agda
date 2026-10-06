@@ -80,6 +80,7 @@ import Kopt.PermIndex
 import Kopt.PermScatter
 import Kopt.PermMul
 import Kopt.SearchMem
+import Kopt.LevelSound
 import Kopt.Unitary
 import Kopt.Unitary2
 import Kopt.MatAdj
