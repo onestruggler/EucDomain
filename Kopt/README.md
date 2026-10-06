@@ -22,6 +22,14 @@ two-qubit operator is a `Matrix 4 4 DComplex`.
 | `Kopt.Unitary` | IV A | unitarity of a `Matrix 4 4 DComplex` as an explicit hypothesis, and **Lemmas IV.2 and IV.3** at the residue level: the parity counts of the columns and rows of ρˡ₁ |
 | `Kopt.PatternFacts` | IV A | **Lemma IV.1**: every unitary over 𝔻[i] has one of the six patterns, and it has pattern (i) if and only if its lde is 0 |
 | `Kopt.MatAdj` | -- | (X·Y)† = Y†·X† and (X†)† = X for 4×4 matrices, which the library does not prove, and therefore that unitarity is closed under products and adjoints |
+| `Kopt.CircuitSem` | III C | the 24 Table I permutation circuits and the 256 diagonal circuits implement the matrices they are meant to, keyed on membership in `all-perms` -- which is all the residue search tells its caller about a permutation |
+| `Kopt.ResPerm` | IV A | ρₙ commutes with a reindexing of the rows and columns (both are applied entrywise) |
+| `Kopt.PermAdj` | III C | G† = G⁻¹ for a generalized permutation, by uniqueness of inverses, and hence left multiplication read as right multiplication by the inverse |
+| `Kopt.PermIndex` | -- | the dictionary between the two indexings of a permutation: `Pos`, a datatype, where selection reduces for a variable permutation, and `Tuple4 = ℕ×ℕ×ℕ×ℕ`, where nothing reduces until the permutation is known |
+| `Kopt.PermScatter` | III C | multiplying on the left by a permutation matrix permutes the rows (the case `lcomb-unit` does not cover), with the permutation still a variable |
+| `Kopt.PermMul` | III C, IV A | P_x·A·P_y is the reindexing `permute-matrix x y A` that the level data records |
+| `Kopt.SearchMem` | IV A | the permutations the search returns lie in `all-perms` |
+| `Kopt.LevelSound` | IV A–B | **what the level data says about the operator**: for `B = L·A·R`, that B is that reindexing of A, that ρˡ₂(B) and ρˡ₁(B) are the recorded residue matrix and pattern, that B has the lde of A, and that B is unitary. Each of the six cases of Section IV B starts here |
 | `Kopt.GateUnitary` | I, III C | every gate, every circuit and every generalized permutation is unitary, hence so is every matrix a descent reaches (`steps-unitary-of`) |
 | `Kopt.Synth` | IV B–C | `decrease1-lde`, `synth`, `optimize-gp`, `prkc` (Table II), Cor. IV.8 |
 | `Kopt.Properties.*` | II | the proofs of Section II (see below); `Kopt.Properties.Algebra` re-exports them |
@@ -73,7 +81,10 @@ matrices at lde 0.
 Those two checks also establish that the search is *sound*: the two permutations it returns carry the
 matrix to the pattern, and the matrix is that pattern permuted back (`level-sound-pos`,
 `level-sound-zero`). That is where a proof about the operator the algorithm builds from the level data
-has to start, since the level data is all that is known about the permutations.
+has to start, since the level data is all that is known about the permutations. `Kopt.LevelSound` carries
+that through to the operator: the two permutations lie in `all-perms`, so Table I applies to them, and
+the operator B = L·A·R that the algorithm passes on is the reindexing the level data names, with the
+recorded ρˡ₂ and the recorded pattern as its residue matrices, the lde of A, and unitarity.
 
 Checked by execution only: Theorem V.9's lower bound rests on "every two-qubit Clifford needs ≤ 2 K
 gates", verified by a BFS producing exactly 46080 elements — the whole Clifford group with phases —
