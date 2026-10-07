@@ -302,3 +302,68 @@ r3-row-orth U l hl hu r c d =
           (trans (trans (sym (ipr-ipc-D (mrow r U) (mrow c U)))
                         (o-row U hu c r (ix/=-sym r c d))) zero-D))
         (trans (cong (ρ 3) (ZR.zeroˡ (2ℤℂ ↑ l))) refl)
+
+-- ----------------------------------------------------------------------
+-- * Reading the digits of a norm
+--
+-- The norm of one entry, at ρ₃. With a = ρ₃(X) leading, b second and c
+-- third, X·X† has digits a, Even and b·(a+1): the middle digit always
+-- vanishes, and the third one is the second digit of X exactly when X is
+-- even. Four cases on (a,b) -- c plays no part -- because a·a = a and
+-- b·b = b need the digits to be known.
+
+-- The second digit of a residue.
+snd₃ : Residue 3 -> Z2
+snd₃ (a ∷ b ∷ c ∷ []) = b
+
+r3-self : (u : Residue 3) ->
+          mul₃ u (conj₃ u) ≡ (Vec.head u ∷ Even ∷ (snd₃ u * (Vec.head u + Odd)) ∷ [])
+r3-self (Even ∷ Even ∷ Even ∷ []) = refl
+r3-self (Even ∷ Even ∷ Odd ∷ []) = refl
+r3-self (Even ∷ Odd ∷ Even ∷ []) = refl
+r3-self (Even ∷ Odd ∷ Odd ∷ []) = refl
+r3-self (Odd ∷ Even ∷ Even ∷ []) = refl
+r3-self (Odd ∷ Even ∷ Odd ∷ []) = refl
+r3-self (Odd ∷ Odd ∷ Even ∷ []) = refl
+r3-self (Odd ∷ Odd ∷ Odd ∷ []) = refl
+
+-- The norm of a column, digit by digit. add₃ carries, so the third digit
+-- of the four-term sum picks up the second elementary symmetric function
+-- of the four leading digits as well.
+-- The third digit of the sum, in exactly the shape the three add₃ steps
+-- produce it: the four third digits, plus the carries, which are the
+-- pairwise products of the leading digits grouped as the nesting groups
+-- them. (The tidier form Σ dₖ + Σ_{j<k} pⱼpₖ differs from this only by
+-- associativity and commutativity of + in ℤ₂, so it needs the ring
+-- solver; nothing below cares which form it is in, because what consumes
+-- it is an enumeration that computes.)
+norm-digit2 : (p₀ p₁ p₂ p₃ d₀ d₁ d₂ d₃ : Z2) -> Z2
+norm-digit2 p₀ p₁ p₂ p₃ d₀ d₁ d₂ d₃ =
+  (d₀ + ((d₁ + ((d₂ + d₃) + p₂ * p₃)) + p₁ * (p₂ + p₃))) + p₀ * (p₁ + (p₂ + p₃))
+
+r3-ip4-self : (X₀ X₁ X₂ X₃ : ZComplex) ->
+              r3-ip4 X₀ X₀ X₁ X₁ X₂ X₂ X₃ X₃
+                ≡ (sum4 (Vec.head (ρ 3 X₀)) (Vec.head (ρ 3 X₁))
+                        (Vec.head (ρ 3 X₂)) (Vec.head (ρ 3 X₃))
+                   ∷ Even
+                   ∷ norm-digit2 (Vec.head (ρ 3 X₀)) (Vec.head (ρ 3 X₁))
+                                 (Vec.head (ρ 3 X₂)) (Vec.head (ρ 3 X₃))
+                                 (snd₃ (ρ 3 X₀) * (Vec.head (ρ 3 X₀) + Odd))
+                                 (snd₃ (ρ 3 X₁) * (Vec.head (ρ 3 X₁) + Odd))
+                                 (snd₃ (ρ 3 X₂) * (Vec.head (ρ 3 X₂) + Odd))
+                                 (snd₃ (ρ 3 X₃) * (Vec.head (ρ 3 X₃) + Odd)) ∷ [])
+r3-ip4-self X₀ X₁ X₂ X₃ =
+  trans (cong₂ add₃ (r3-self (ρ 3 X₀))
+          (cong₂ add₃ (r3-self (ρ 3 X₁))
+            (cong₂ add₃ (r3-self (ρ 3 X₂)) (r3-self (ρ 3 X₃)))))
+        (go (Vec.head (ρ 3 X₀)) (Vec.head (ρ 3 X₁)) (Vec.head (ρ 3 X₂)) (Vec.head (ρ 3 X₃))
+            (snd₃ (ρ 3 X₀) * (Vec.head (ρ 3 X₀) + Odd)) (snd₃ (ρ 3 X₁) * (Vec.head (ρ 3 X₁) + Odd))
+            (snd₃ (ρ 3 X₂) * (Vec.head (ρ 3 X₂) + Odd)) (snd₃ (ρ 3 X₃) * (Vec.head (ρ 3 X₃) + Odd)))
+  where
+    -- the three add₃ steps, over the eight digits as variables
+    go : (p₀ p₁ p₂ p₃ d₀ d₁ d₂ d₃ : Z2) ->
+         add₃ (p₀ ∷ Even ∷ d₀ ∷ [])
+              (add₃ (p₁ ∷ Even ∷ d₁ ∷ [])
+                    (add₃ (p₂ ∷ Even ∷ d₂ ∷ []) (p₃ ∷ Even ∷ d₃ ∷ [])))
+           ≡ (sum4 p₀ p₁ p₂ p₃ ∷ Even ∷ norm-digit2 p₀ p₁ p₂ p₃ d₀ d₁ d₂ d₃ ∷ [])
+    go p₀ p₁ p₂ p₃ d₀ d₁ d₂ d₃ = refl
