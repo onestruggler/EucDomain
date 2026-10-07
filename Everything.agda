@@ -82,6 +82,7 @@ import Kopt.PermMul
 import Kopt.SearchMem
 import Kopt.LevelSound
 import Kopt.Unitary3
+import Kopt.ImRes
 import Kopt.Unitary
 import Kopt.Unitary2
 import Kopt.MatAdj
