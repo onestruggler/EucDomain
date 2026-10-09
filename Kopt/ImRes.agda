@@ -30,7 +30,8 @@ open import Quantum.Synthesis.Ring
 open import Quantum.Synthesis.Matrix
 open import Kopt.Base
 open import Kopt.Permutations using (Tuple4)
-open import Kopt.Patterns using (R2 ; r2-zero ; r2-one ; r2-i ; im-exp ; im-res)
+open import Kopt.Gates using (Gate ; CX ; Ex ; Circuit)
+open import Kopt.Patterns using (R2 ; r2-zero ; r2-one ; r2-i ; im-exp ; im-res ; r2-of-circuit)
 open import Kopt.Descent using (_∈ˡ_ ; here ; there)
 
 -- ----------------------------------------------------------------------
@@ -139,3 +140,50 @@ imr-ok _ (there (there (there (there (there (there (there (there (there (there
       (there (there (there (there (there (there (there (there (there (there (there (there (there (there here))))))))))))))
     go _ _ _ _ (inj₂ refl) (inj₂ refl) (inj₂ refl) (inj₂ refl) =
       (there (there (there (there (there (there (there (there (there (there (there (there (there (there (there here)))))))))))))))
+
+-- ----------------------------------------------------------------------
+-- * The residues of the circuits that the refinements use
+--
+-- Besides the diagonal unitaries, the refinements multiply by the residue
+-- of a one- or two-gate circuit: CX, Ex, or CX followed by Ex. Those go
+-- through 𝔻[i] too, so they are tabulated here as well. All three are
+-- permutation matrices, so the residues are the same patterns with r2-one
+-- for 1 and r2-zero for 0.
+
+private
+  o : R2
+  o = r2-one
+  z : R2
+  z = r2-zero
+
+-- The identity, which is the residue of the empty circuit.
+r2-nil : Matrix 4 4 R2
+r2-nil = Matrix' ((o ∷ z ∷ z ∷ z ∷ []) ∷ (z ∷ o ∷ z ∷ z ∷ [])
+                ∷ (z ∷ z ∷ o ∷ z ∷ []) ∷ (z ∷ z ∷ z ∷ o ∷ []) ∷ [])
+
+-- cnot: it fixes e₀ and e₁ and exchanges e₂ and e₃.
+r2-cx : Matrix 4 4 R2
+r2-cx = Matrix' ((o ∷ z ∷ z ∷ z ∷ []) ∷ (z ∷ o ∷ z ∷ z ∷ [])
+               ∷ (z ∷ z ∷ z ∷ o ∷ []) ∷ (z ∷ z ∷ o ∷ z ∷ []) ∷ [])
+
+-- swap: it fixes e₀ and e₃ and exchanges e₁ and e₂.
+r2-ex : Matrix 4 4 R2
+r2-ex = Matrix' ((o ∷ z ∷ z ∷ z ∷ []) ∷ (z ∷ z ∷ o ∷ z ∷ [])
+               ∷ (z ∷ o ∷ z ∷ z ∷ []) ∷ (z ∷ z ∷ z ∷ o ∷ []) ∷ [])
+
+-- cnot after swap.
+r2-cxex : Matrix 4 4 R2
+r2-cxex = Matrix' ((o ∷ z ∷ z ∷ z ∷ []) ∷ (z ∷ z ∷ z ∷ o ∷ [])
+                 ∷ (z ∷ o ∷ z ∷ z ∷ []) ∷ (z ∷ z ∷ o ∷ z ∷ []) ∷ [])
+
+r2-nil-ok : r2-of-circuit [] ≡ r2-nil
+r2-nil-ok = refl
+
+r2-cx-ok : r2-of-circuit (CX ∷ []) ≡ r2-cx
+r2-cx-ok = refl
+
+r2-ex-ok : r2-of-circuit (Ex ∷ []) ≡ r2-ex
+r2-ex-ok = refl
+
+r2-cxex-ok : r2-of-circuit (CX ∷ Ex ∷ []) ≡ r2-cxex
+r2-cxex-ok = refl
