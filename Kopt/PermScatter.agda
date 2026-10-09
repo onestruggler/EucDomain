@@ -33,77 +33,15 @@ open import Kopt.Descent
   using (Op ; Pos ; p0 ; p1 ; p2 ; p3 ; Pos4 ; Phase ; ph0 ; phase-val ; Phase4
         ; selp ; selph ; inv4p ; inv4p-right ; selp-comp ; selp-id ; id4p ; comp4p
         ; distinct4p ; _==p_ ; ==p-sound ; unit-vec ; gp-mat-of ; mcol4
-        ; smul ; vadd ; lcomb ; mmul-≡ ; vec4-≡ ; mat4-≡ ; ∧-true ; module M4)
+        ; smul ; vadd ; lcomb ; vec4-≡ ; mat4-≡ ; ∧-true ; module Mat4)
 open import Kopt.PermIndex using (vselp)
 
-open M4 using (pick0 ; pick1 ; pick2 ; pick3)
 
-private
-  module DR = IsCommutativeRing isCommutativeRing-DComplex
 
 -- All phases trivial: a permutation matrix is the generalized
 -- permutation with no phases.
 ph0s : Phase4
 ph0s = ph0 , ph0 , ph0 , ph0
-
--- ----------------------------------------------------------------------
--- * Entries of the vector operations
-
-vselp-vadd : (p : Pos) (v w : Vector 4 DComplex) ->
-             vselp p (vadd v w) ≡ vselp p v + vselp p w
-vselp-vadd p0 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
-vselp-vadd p1 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
-vselp-vadd p2 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
-vselp-vadd p3 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
-
-vselp-smul : (p : Pos) (a : DComplex) (v : Vector 4 DComplex) ->
-             vselp p (smul a v) ≡ a * vselp p v
-vselp-smul p0 a (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
-vselp-smul p1 a (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
-vselp-smul p2 a (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
-vselp-smul p3 a (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
-
-vselp-zero : (p : Pos) -> vselp p (vector-repeat (0# {A = DComplex})) ≡ 0#
-vselp-zero p0 = refl
-vselp-zero p1 = refl
-vselp-zero p2 = refl
-vselp-zero p3 = refl
-
--- The entry of a four-term linear combination.
-vselp-lcomb : (p : Pos) (u₀ u₁ u₂ u₃ : Vector 4 DComplex) (w₀ w₁ w₂ w₃ : DComplex) ->
-              vselp p (lcomb (u₀ ∷ u₁ ∷ u₂ ∷ u₃ ∷ []) (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ []))
-                ≡ (w₀ * vselp p u₀)
-                  + ((w₁ * vselp p u₁) + ((w₂ * vselp p u₂) + ((w₃ * vselp p u₃) + 0#)))
-vselp-lcomb p u₀ u₁ u₂ u₃ w₀ w₁ w₂ w₃ =
-  trans (vselp-vadd p (smul w₀ u₀) _)
-        (cong₂ (λ s t -> s + t) (vselp-smul p w₀ u₀)
-          (trans (vselp-vadd p (smul w₁ u₁) _)
-            (cong₂ (λ s t -> s + t) (vselp-smul p w₁ u₁)
-              (trans (vselp-vadd p (smul w₂ u₂) _)
-                (cong₂ (λ s t -> s + t) (vselp-smul p w₂ u₂)
-                  (trans (vselp-vadd p (smul w₃ u₃) _)
-                    (cong₂ (λ s t -> s + t) (vselp-smul p w₃ u₃) (vselp-zero p))))))))
-
--- ----------------------------------------------------------------------
--- * Entries of a unit vector
-
-unit-entry : (q p : Pos) -> vselp p (unit-vec q ph0) ≡ (if q ==p p then 1# else 0#)
-unit-entry p0 p0 = refl
-unit-entry p0 p1 = refl
-unit-entry p0 p2 = refl
-unit-entry p0 p3 = refl
-unit-entry p1 p0 = refl
-unit-entry p1 p1 = refl
-unit-entry p1 p2 = refl
-unit-entry p1 p3 = refl
-unit-entry p2 p0 = refl
-unit-entry p2 p1 = refl
-unit-entry p2 p2 = refl
-unit-entry p2 p3 = refl
-unit-entry p3 p0 = refl
-unit-entry p3 p1 = refl
-unit-entry p3 p2 = refl
-unit-entry p3 p3 = refl
 
 ==p-refl : (p : Pos) -> (p ==p p) ≡ true
 ==p-refl p0 = refl
@@ -190,89 +128,6 @@ inv-sel : (t : Pos4) -> distinct4p t ≡ true -> (p : Pos) -> selp t (selp (inv4
 inv-sel t h p = trans (sym (selp-comp t (inv4p t) p))
                       (trans (cong (λ u -> selp u p) (inv4p-right t h)) (selp-id p))
 
--- ----------------------------------------------------------------------
--- * The scatter
---
--- Σₖ wₖ·e_{t(k)} has its pth entry at w_{t⁻¹(p)}.
-
-scatter : (t : Pos4) -> distinct4p t ≡ true -> (p : Pos) (w₀ w₁ w₂ w₃ : DComplex) ->
-          vselp p (lcomb (unit-vec (selp t p0) ph0 ∷ unit-vec (selp t p1) ph0
-                        ∷ unit-vec (selp t p2) ph0 ∷ unit-vec (selp t p3) ph0 ∷ [])
-                        (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ []))
-            ≡ vselp (selp (inv4p t) p) (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ [])
-scatter t h p w₀ w₁ w₂ w₃ = go (selp (inv4p t) p) refl
-  where
-    e : Pos -> DComplex
-    e k = if selp t k ==p p then 1# else 0#
-
-    cong-sum4 : {a₀ a₁ a₂ a₃ b₀ b₁ b₂ b₃ : DComplex} ->
-                a₀ ≡ b₀ -> a₁ ≡ b₁ -> a₂ ≡ b₂ -> a₃ ≡ b₃ ->
-                (w₀ * a₀) + ((w₁ * a₁) + ((w₂ * a₂) + ((w₃ * a₃) + 0#)))
-                  ≡ (w₀ * b₀) + ((w₁ * b₁) + ((w₂ * b₂) + ((w₃ * b₃) + 0#)))
-    cong-sum4 refl refl refl refl = refl
-
-    sum≡ : vselp p (lcomb (unit-vec (selp t p0) ph0 ∷ unit-vec (selp t p1) ph0
-                         ∷ unit-vec (selp t p2) ph0 ∷ unit-vec (selp t p3) ph0 ∷ [])
-                         (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ []))
-             ≡ (w₀ * e p0) + ((w₁ * e p1) + ((w₂ * e p2) + ((w₃ * e p3) + 0#)))
-    sum≡ = trans (vselp-lcomb p (unit-vec (selp t p0) ph0) (unit-vec (selp t p1) ph0)
-                                (unit-vec (selp t p2) ph0) (unit-vec (selp t p3) ph0)
-                                w₀ w₁ w₂ w₃)
-                 (cong-sum4 (unit-entry (selp t p0) p) (unit-entry (selp t p1) p)
-                            (unit-entry (selp t p2) p) (unit-entry (selp t p3) p))
-
-    -- the image of the inverse's value is p
-    at : (j : Pos) -> selp (inv4p t) p ≡ j -> selp t j ≡ p
-    at j ee = subst (λ u -> selp t u ≡ p) ee (inv-sel t h p)
-
-    kept : (j : Pos) -> selp t j ≡ p -> e j ≡ 1#
-    kept j eq = cong (λ β -> if β then 1# else 0#)
-                     (trans (cong (λ q -> q ==p p) eq) (==p-refl p))
-
-    drop : (j k : Pos) -> selp t j ≡ p -> (k ==p j) ≡ false -> e k ≡ 0#
-    drop j k eq ne = cong (λ β -> if β then 1# else 0#)
-                          (trans (cong (λ q -> selp t k ==p q) (sym eq))
-                                 (distinct-pair t h k j ne))
-
-    mul0 : (a b : DComplex) -> b ≡ 0# -> a * b ≡ 0#
-    mul0 a b hb = trans (cong (λ z -> a * z) hb) (DR.zeroʳ a)
-
-    mul1 : (a b : DComplex) -> b ≡ 1# -> a * b ≡ a
-    mul1 a b hb = trans (cong (λ z -> a * z) hb) (DR.*-identityʳ a)
-
-    go : (j : Pos) -> selp (inv4p t) p ≡ j ->
-         vselp p (lcomb (unit-vec (selp t p0) ph0 ∷ unit-vec (selp t p1) ph0
-                       ∷ unit-vec (selp t p2) ph0 ∷ unit-vec (selp t p3) ph0 ∷ [])
-                       (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ []))
-           ≡ vselp j (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ [])
-    go p0 ee = trans sum≡
-                 (trans (pick0 (w₀ * e p0) (w₁ * e p1) (w₂ * e p2) (w₃ * e p3)
-                               (mul0 w₁ _ (drop p0 p1 (at p0 ee) refl))
-                               (mul0 w₂ _ (drop p0 p2 (at p0 ee) refl))
-                               (mul0 w₃ _ (drop p0 p3 (at p0 ee) refl)))
-                        (mul1 w₀ _ (kept p0 (at p0 ee))))
-    go p1 ee = trans sum≡
-                 (trans (pick1 (w₀ * e p0) (w₁ * e p1) (w₂ * e p2) (w₃ * e p3)
-                               (mul0 w₀ _ (drop p1 p0 (at p1 ee) refl))
-                               (mul0 w₂ _ (drop p1 p2 (at p1 ee) refl))
-                               (mul0 w₃ _ (drop p1 p3 (at p1 ee) refl)))
-                        (mul1 w₁ _ (kept p1 (at p1 ee))))
-    go p2 ee = trans sum≡
-                 (trans (pick2 (w₀ * e p0) (w₁ * e p1) (w₂ * e p2) (w₃ * e p3)
-                               (mul0 w₀ _ (drop p2 p0 (at p2 ee) refl))
-                               (mul0 w₁ _ (drop p2 p1 (at p2 ee) refl))
-                               (mul0 w₃ _ (drop p2 p3 (at p2 ee) refl)))
-                        (mul1 w₂ _ (kept p2 (at p2 ee))))
-    go p3 ee = trans sum≡
-                 (trans (pick3 (w₀ * e p0) (w₁ * e p1) (w₂ * e p2) (w₃ * e p3)
-                               (mul0 w₀ _ (drop p3 p0 (at p3 ee) refl))
-                               (mul0 w₁ _ (drop p3 p1 (at p3 ee) refl))
-                               (mul0 w₂ _ (drop p3 p2 (at p3 ee) refl)))
-                        (mul1 w₃ _ (kept p3 (at p3 ee))))
-
--- ----------------------------------------------------------------------
--- * Multiplying on the left by a permutation matrix
-
 -- Reordering a 4-vector along a Pos4, the Pos-indexed form of
 -- Kopt.Patterns.select4 (Kopt.PermIndex.select4-pos relates the two).
 select4p : {A : Set} -> Pos4 -> Vector 4 A -> Vector 4 A
@@ -293,21 +148,218 @@ vec4-extp : {A : Set} (v w : Vector 4 A) -> ((p : Pos) -> vselp p v ≡ vselp p 
 vec4-extp (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) hp =
   vec4-≡ (hp p0) (hp p1) (hp p2) (hp p3)
 
--- Row r of P_t·A is row t⁻¹(r) of A.
+-- ----------------------------------------------------------------------
+-- * Performance
+--
+-- The scatter below is proved for an ABSTRACT commutative ring and
+-- instantiated at the dyadic complex numbers afterwards. The sum whose
+-- terms it collapses has factors `if selp t k ==p p then 1# else 0#`,
+-- which are stuck, since the permutation is a variable; over the dyadic
+-- complex numbers each product of such a stuck conditional with a matrix
+-- entry expands into the dyadic arithmetic, a smart constructor with a
+-- stuck parity test inside an eta record. That cost this module 241 s.
+-- Everything above is about Pos alone and mentions no ring at all.
+
+
+module Scatter {A : Set} {{RA : Ring A}}
+               (isCR : IsCommutativeRing (_≡_ {A = A}) _+_ _*_ -_ 0# 1#) where
+  private
+    module R = IsCommutativeRing isCR
+  open Mat4 isCR using (pick0 ; pick1 ; pick2 ; pick3 ; mmul-≡)
+
+  -- The unit vector with 1# at position q.
+  uvec : Pos -> Vector 4 A
+  uvec p0 = 1# ∷ 0# ∷ 0# ∷ 0# ∷ []
+  uvec p1 = 0# ∷ 1# ∷ 0# ∷ 0# ∷ []
+  uvec p2 = 0# ∷ 0# ∷ 1# ∷ 0# ∷ []
+  uvec p3 = 0# ∷ 0# ∷ 0# ∷ 1# ∷ []
+
+  -- The matrix of a permutation.
+  pmat : Pos4 -> Matrix 4 4 A
+  pmat t = Matrix' (uvec (selp t p0) ∷ uvec (selp t p1) ∷ uvec (selp t p2) ∷ uvec (selp t p3) ∷ [])
+
+  private
+    vselp-vadd : (p : Pos) (v w : Vector 4 A) -> vselp p (vadd v w) ≡ vselp p v + vselp p w
+    vselp-vadd p0 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
+    vselp-vadd p1 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
+    vselp-vadd p2 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
+    vselp-vadd p3 (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ []) (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
+
+    vselp-smul : (p : Pos) (a : A) (v : Vector 4 A) -> vselp p (smul a v) ≡ a * vselp p v
+    vselp-smul p0 a (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
+    vselp-smul p1 a (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
+    vselp-smul p2 a (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
+    vselp-smul p3 a (b₀ ∷ b₁ ∷ b₂ ∷ b₃ ∷ []) = refl
+
+    vselp-zero : (p : Pos) -> vselp p (vector-repeat (0# {A = A})) ≡ 0#
+    vselp-zero p0 = refl
+    vselp-zero p1 = refl
+    vselp-zero p2 = refl
+    vselp-zero p3 = refl
+
+    vselp-lcomb : (p : Pos) (u₀ u₁ u₂ u₃ : Vector 4 A) (w₀ w₁ w₂ w₃ : A) ->
+                  vselp p (lcomb (u₀ ∷ u₁ ∷ u₂ ∷ u₃ ∷ []) (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ []))
+                    ≡ (w₀ * vselp p u₀)
+                      + ((w₁ * vselp p u₁) + ((w₂ * vselp p u₂) + ((w₃ * vselp p u₃) + 0#)))
+    vselp-lcomb p u₀ u₁ u₂ u₃ w₀ w₁ w₂ w₃ =
+      trans (vselp-vadd p (smul w₀ u₀) _)
+            (cong₂ (λ s t -> s + t) (vselp-smul p w₀ u₀)
+              (trans (vselp-vadd p (smul w₁ u₁) _)
+                (cong₂ (λ s t -> s + t) (vselp-smul p w₁ u₁)
+                  (trans (vselp-vadd p (smul w₂ u₂) _)
+                    (cong₂ (λ s t -> s + t) (vselp-smul p w₂ u₂)
+                      (trans (vselp-vadd p (smul w₃ u₃) _)
+                        (cong₂ (λ s t -> s + t) (vselp-smul p w₃ u₃) (vselp-zero p))))))))
+
+    uvec-entry : (q p : Pos) -> vselp p (uvec q) ≡ (if q ==p p then 1# else 0#)
+    uvec-entry p0 p0 = refl
+    uvec-entry p0 p1 = refl
+    uvec-entry p0 p2 = refl
+    uvec-entry p0 p3 = refl
+    uvec-entry p1 p0 = refl
+    uvec-entry p1 p1 = refl
+    uvec-entry p1 p2 = refl
+    uvec-entry p1 p3 = refl
+    uvec-entry p2 p0 = refl
+    uvec-entry p2 p1 = refl
+    uvec-entry p2 p2 = refl
+    uvec-entry p2 p3 = refl
+    uvec-entry p3 p0 = refl
+    uvec-entry p3 p1 = refl
+    uvec-entry p3 p2 = refl
+    uvec-entry p3 p3 = refl
+
+  -- The sum of wk times the unit vector at t(k) has its pth entry at
+  -- w at t-inverse of p.
+  scatter : (t : Pos4) -> distinct4p t ≡ true -> (p : Pos) (w₀ w₁ w₂ w₃ : A) ->
+            vselp p (lcomb (uvec (selp t p0) ∷ uvec (selp t p1)
+                          ∷ uvec (selp t p2) ∷ uvec (selp t p3) ∷ [])
+                          (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ []))
+              ≡ vselp (selp (inv4p t) p) (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ [])
+  scatter t h p w₀ w₁ w₂ w₃ = go (selp (inv4p t) p) refl
+    where
+      e : Pos -> A
+      e k = if selp t k ==p p then 1# else 0#
+
+      cong-sum4 : {a₀ a₁ a₂ a₃ b₀ b₁ b₂ b₃ : A} ->
+                  a₀ ≡ b₀ -> a₁ ≡ b₁ -> a₂ ≡ b₂ -> a₃ ≡ b₃ ->
+                  (w₀ * a₀) + ((w₁ * a₁) + ((w₂ * a₂) + ((w₃ * a₃) + 0#)))
+                    ≡ (w₀ * b₀) + ((w₁ * b₁) + ((w₂ * b₂) + ((w₃ * b₃) + 0#)))
+      cong-sum4 refl refl refl refl = refl
+
+      sum≡ : vselp p (lcomb (uvec (selp t p0) ∷ uvec (selp t p1)
+                           ∷ uvec (selp t p2) ∷ uvec (selp t p3) ∷ [])
+                           (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ []))
+               ≡ (w₀ * e p0) + ((w₁ * e p1) + ((w₂ * e p2) + ((w₃ * e p3) + 0#)))
+      sum≡ = trans (vselp-lcomb p (uvec (selp t p0)) (uvec (selp t p1))
+                                  (uvec (selp t p2)) (uvec (selp t p3)) w₀ w₁ w₂ w₃)
+                   (cong-sum4 (uvec-entry (selp t p0) p) (uvec-entry (selp t p1) p)
+                              (uvec-entry (selp t p2) p) (uvec-entry (selp t p3) p))
+
+      at : (j : Pos) -> selp (inv4p t) p ≡ j -> selp t j ≡ p
+      at j ee = subst (λ u -> selp t u ≡ p) ee (inv-sel t h p)
+
+      kept : (j : Pos) -> selp t j ≡ p -> e j ≡ 1#
+      kept j eq = cong (λ β -> if β then 1# else 0#)
+                       (trans (cong (λ q -> q ==p p) eq) (==p-refl p))
+
+      drop : (j k : Pos) -> selp t j ≡ p -> (k ==p j) ≡ false -> e k ≡ 0#
+      drop j k eq ne = cong (λ β -> if β then 1# else 0#)
+                            (trans (cong (λ q -> selp t k ==p q) (sym eq))
+                                   (distinct-pair t h k j ne))
+
+      mul0 : (a b : A) -> b ≡ 0# -> a * b ≡ 0#
+      mul0 a b hb = trans (cong (λ z -> a * z) hb) (R.zeroʳ a)
+
+      mul1 : (a b : A) -> b ≡ 1# -> a * b ≡ a
+      mul1 a b hb = trans (cong (λ z -> a * z) hb) (R.*-identityʳ a)
+
+      go : (j : Pos) -> selp (inv4p t) p ≡ j ->
+           vselp p (lcomb (uvec (selp t p0) ∷ uvec (selp t p1)
+                         ∷ uvec (selp t p2) ∷ uvec (selp t p3) ∷ [])
+                         (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ []))
+             ≡ vselp j (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ [])
+      go p0 ee = trans sum≡
+                   (trans (pick0 (w₀ * e p0) (w₁ * e p1) (w₂ * e p2) (w₃ * e p3)
+                                 (mul0 w₁ _ (drop p0 p1 (at p0 ee) refl))
+                                 (mul0 w₂ _ (drop p0 p2 (at p0 ee) refl))
+                                 (mul0 w₃ _ (drop p0 p3 (at p0 ee) refl)))
+                          (mul1 w₀ _ (kept p0 (at p0 ee))))
+      go p1 ee = trans sum≡
+                   (trans (pick1 (w₀ * e p0) (w₁ * e p1) (w₂ * e p2) (w₃ * e p3)
+                                 (mul0 w₀ _ (drop p1 p0 (at p1 ee) refl))
+                                 (mul0 w₂ _ (drop p1 p2 (at p1 ee) refl))
+                                 (mul0 w₃ _ (drop p1 p3 (at p1 ee) refl)))
+                          (mul1 w₁ _ (kept p1 (at p1 ee))))
+      go p2 ee = trans sum≡
+                   (trans (pick2 (w₀ * e p0) (w₁ * e p1) (w₂ * e p2) (w₃ * e p3)
+                                 (mul0 w₀ _ (drop p2 p0 (at p2 ee) refl))
+                                 (mul0 w₁ _ (drop p2 p1 (at p2 ee) refl))
+                                 (mul0 w₃ _ (drop p2 p3 (at p2 ee) refl)))
+                          (mul1 w₂ _ (kept p2 (at p2 ee))))
+      go p3 ee = trans sum≡
+                   (trans (pick3 (w₀ * e p0) (w₁ * e p1) (w₂ * e p2) (w₃ * e p3)
+                                 (mul0 w₀ _ (drop p3 p0 (at p3 ee) refl))
+                                 (mul0 w₁ _ (drop p3 p1 (at p3 ee) refl))
+                                 (mul0 w₂ _ (drop p3 p2 (at p3 ee) refl)))
+                          (mul1 w₃ _ (kept p3 (at p3 ee))))
+
+  -- Row r of the product of the permutation matrix with M is row
+  -- t-inverse of r of M.
+  pmat-mul : (t : Pos4) -> distinct4p t ≡ true -> (M : Matrix 4 4 A) ->
+             pmat t * M
+               ≡ Matrix' ( select4p (inv4p t) (vselp p0 (unMatrix M))
+                         ∷ select4p (inv4p t) (vselp p1 (unMatrix M))
+                         ∷ select4p (inv4p t) (vselp p2 (unMatrix M))
+                         ∷ select4p (inv4p t) (vselp p3 (unMatrix M)) ∷ [])
+  pmat-mul t h (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) =
+    trans (mmul-≡ (pmat t) (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])))
+          (mat4-≡ (col a₀) (col a₁) (col a₂) (col a₃))
+    where
+      col : (v : Vector 4 A) ->
+            lcomb (uvec (selp t p0) ∷ uvec (selp t p1)
+                 ∷ uvec (selp t p2) ∷ uvec (selp t p3) ∷ []) v
+              ≡ select4p (inv4p t) v
+      col (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ []) =
+        vec4-extp _ _ (λ p -> trans (scatter t h p w₀ w₁ w₂ w₃)
+                                    (sym (vselp-select4p (inv4p t) (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ []) p)))
+
+-- ----------------------------------------------------------------------
+-- * At the dyadic complex numbers
+
+private
+  module SD = Scatter isCommutativeRing-DComplex
+
+mcol4-vselp : (q : Pos) (A : Op) -> mcol4 q A ≡ vselp q (unMatrix A)
+mcol4-vselp p0 (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) = refl
+mcol4-vselp p1 (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) = refl
+mcol4-vselp p2 (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) = refl
+mcol4-vselp p3 (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) = refl
+
+-- The generic unit vector is the phase-free one of Kopt.Descent.
+uvec-unit : (q : Pos) -> SD.uvec q ≡ unit-vec q ph0
+uvec-unit p0 = refl
+uvec-unit p1 = refl
+uvec-unit p2 = refl
+uvec-unit p3 = refl
+
+pmat-gp : (t : Pos4) -> SD.pmat t ≡ gp-mat-of t ph0s
+pmat-gp t = mat4-≡ (uvec-unit (selp t p0)) (uvec-unit (selp t p1))
+                   (uvec-unit (selp t p2)) (uvec-unit (selp t p3))
+
+-- Row r of the product of a permutation matrix with A is row t-inverse
+-- of r of A.
 perm-mul-left : (t : Pos4) -> distinct4p t ≡ true -> (A : Op) ->
                 gp-mat-of t ph0s * A
                   ≡ Matrix' ( select4p (inv4p t) (mcol4 p0 A)
                             ∷ select4p (inv4p t) (mcol4 p1 A)
                             ∷ select4p (inv4p t) (mcol4 p2 A)
                             ∷ select4p (inv4p t) (mcol4 p3 A) ∷ [])
-perm-mul-left t h (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])) =
-  trans (mmul-≡ (gp-mat-of t ph0s) (Matrix' (a₀ ∷ a₁ ∷ a₂ ∷ a₃ ∷ [])))
-        (mat4-≡ (col a₀) (col a₁) (col a₂) (col a₃))
+perm-mul-left t h A =
+  trans (cong (λ m -> m * A) (sym (pmat-gp t)))
+        (trans (SD.pmat-mul t h A) (mat4-≡ (cl p0) (cl p1) (cl p2) (cl p3)))
   where
-    col : (v : Vector 4 DComplex) ->
-          lcomb (unit-vec (selp t p0) ph0 ∷ unit-vec (selp t p1) ph0
-               ∷ unit-vec (selp t p2) ph0 ∷ unit-vec (selp t p3) ph0 ∷ []) v
-            ≡ select4p (inv4p t) v
-    col (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ []) =
-      vec4-extp _ _ (λ p -> trans (scatter t h p w₀ w₁ w₂ w₃)
-                                  (sym (vselp-select4p (inv4p t) (w₀ ∷ w₁ ∷ w₂ ∷ w₃ ∷ []) p)))
+    cl : (q : Pos) -> select4p (inv4p t) (vselp q (unMatrix A))
+                        ≡ select4p (inv4p t) (mcol4 q A)
+    cl q = cong (select4p (inv4p t)) (sym (mcol4-vselp q A))
+
