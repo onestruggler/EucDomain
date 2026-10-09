@@ -5,4 +5,6 @@
 *.lagda.tex text eol=lf
 *.lagda.rst text eol=lf
 *.lagda.org text eol=lf
+# Agda reads library files literally; a CR would end up in include paths.
+*.agda-lib text eol=lf
 .gitattributes text eol=lf
